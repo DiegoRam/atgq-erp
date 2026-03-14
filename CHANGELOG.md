@@ -10,6 +10,16 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P2.3** — Sistema de tabs del workspace:
+  - Zustand store (`tabsStore`) con openTab, closeTab, setActive
+  - Persistencia en sessionStorage (se pierden al cerrar navegador)
+  - Máximo 8 tabs simultáneos (el más antiguo se cierra automáticamente)
+  - Tabs cerrables con botón ×, al cerrar el activo se activa el anterior
+  - No duplica tabs: si la sección ya está abierta, la activa
+  - Ícono diferenciado: tabla para datos, gráfico para reportes
+  - Integración con navbar: clickear un item del dropdown abre tab + navega
+  - Sincronización automática del tab activo con la URL actual
+
 - **P2.2** — Layout principal con header y navbar:
   - Route group `(dashboard)` con layout que incluye header + navbar + área de contenido
   - `AppHeader` (server component): título del club, usuario autenticado, fecha actual, botón logout

@@ -9,9 +9,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NAV_MODULES, type NavModule } from "@/lib/nav-config";
-import Link from "next/link";
+import { useTabsStore } from "@/store/tabsStore";
+import { useRouter } from "next/navigation";
 
 function NavDropdown({ module }: { module: NavModule }) {
+  const openTab = useTabsStore((s) => s.openTab);
+  const router = useRouter();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-white/90 transition-colors hover:text-white focus:outline-none">
@@ -23,10 +27,15 @@ function NavDropdown({ module }: { module: NavModule }) {
           "separator" in item ? (
             <DropdownMenuSeparator key={`sep-${i}`} />
           ) : (
-            <DropdownMenuItem key={item.href} asChild>
-              <Link href={item.href} className="cursor-pointer">
-                {item.label}
-              </Link>
+            <DropdownMenuItem
+              key={item.href}
+              className="cursor-pointer"
+              onSelect={() => {
+                openTab(item.href, item.label);
+                router.push(item.href);
+              }}
+            >
+              {item.label}
             </DropdownMenuItem>
           ),
         )}

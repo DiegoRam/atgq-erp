@@ -12,7 +12,7 @@
 | Fase | Nombre | Estado | Completado |
 |------|--------|--------|------------|
 | 1 | Scaffold + Base de datos | ✅ Completado | 4/4 |
-| 2 | Auth + Layout | 🔄 En progreso | 2/4 |
+| 2 | Auth + Layout | 🔄 En progreso | 3/4 |
 | 3 | SOCIOS | ⬜ Pendiente | — |
 | 4 | TESORERÍA | ⬜ Pendiente | — |
 | 5 | STOCK | ⬜ Pendiente | — |
@@ -42,7 +42,7 @@
 |----|-------|--------|-------|
 | P2.1 | Login/logout con Supabase Auth + middleware de protección | ✅ | 2026-03-14 |
 | P2.2 | Layout principal: header + navbar con dropdowns | ✅ | 2026-03-14 |
-| P2.3 | Sistema de tabs del workspace (ModuleTab) | ⬜ | — |
+| P2.3 | Sistema de tabs del workspace (ModuleTab) | ✅ | 2026-03-14 |
 | P2.4 | Componentes base: DataTable, FacetFilter, FormModal, StatsCard | ⬜ | — |
 
 ---
