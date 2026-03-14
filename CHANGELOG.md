@@ -10,6 +10,15 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P2.4** — Componentes base reutilizables:
+  - `DataTable`: tabla genérica con @tanstack/react-table, paginación server-side, búsqueda, toggle columnas, skeleton loading, export CSV, ordenamiento
+  - `FacetFilter`: sidebar de filtros con checkboxes, conteos y "Ver más/menos"
+  - `FormModal`: modal genérico con Dialog de shadcn, tamaños sm/md/lg, spinner en submit
+  - `PageHeader`: header de página con título, descripción y slot de acciones
+  - `StatsCard`: tarjeta de KPI con ícono y tendencia porcentual
+  - Barrel export desde `src/components/shared/index.ts`
+  - Componentes shadcn/ui instalados: table, dialog, checkbox, skeleton, badge
+
 - **P2.3** — Sistema de tabs del workspace:
   - Zustand store (`tabsStore`) con openTab, closeTab, setActive
   - Persistencia en sessionStorage (se pierden al cerrar navegador)
