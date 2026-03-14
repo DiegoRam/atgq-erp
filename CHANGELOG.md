@@ -10,6 +10,17 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P1.4** — Seed data inicial (`supabase/seed.sql`):
+  - 14 categorías sociales del sistema legacy (Activo, Cadete, Vitalicio, Adherente, Grupo Familiar, BAJA, etc.)
+  - 6 métodos de cobranza (Efectivo, VISA Crédito/Débito, Mastercard, Transferencia, Débito Automático)
+  - 3 tipos de cuotas (Social, Actividad, Especial)
+  - 4 roles del sistema (Administrador, Tesorero, Recepcionista, Solo Lectura)
+  - 28 permisos por rol/módulo (7 módulos × 4 roles)
+  - 1 depósito inicial (Deposito Central)
+  - 9 categorías de movimientos de tesorería (4 ingresos + 5 egresos)
+  - 3 instalaciones para turnos (Cancha Tiro, Gimnasio, Salón Principal)
+  - Idempotente: usa `INSERT ... ON CONFLICT DO NOTHING`
+
 - **P1.3** — Migraciones SQL completas (schema inicial):
   - `supabase/migrations/20260314000001_initial_schema.sql` con 25 tablas
   - Módulos: SOCIOS (6 tablas), ACTIVIDADES (3), TURNOS (2), VENTAS (3), STOCK (3), TESORERÍA (3), SECURITY (3)
