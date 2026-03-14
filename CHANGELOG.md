@@ -8,7 +8,14 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-_Cambios en progreso, aún no versionados._
+### Added
+
+- **P1.1** — Scaffold inicial del proyecto:
+  - Next.js 14.2.35 con App Router, TypeScript strict, Tailwind CSS v3
+  - shadcn/ui configurado (components.json, CSS variables, `cn()` utility)
+  - Dependencias: @tanstack/react-table, react-hook-form, zod, recharts, date-fns, lucide-react
+  - Prettier + eslint-config-prettier con scripts `format` y `format:check`
+  - Estructura de carpetas: `src/app/`, `src/components/ui/`, `src/components/shared/`, `src/lib/`, `src/types/`
 
 ---
 
