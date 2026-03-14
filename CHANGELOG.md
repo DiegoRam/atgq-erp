@@ -10,6 +10,48 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P6.1** — Nueva Venta POS (`/ventas/nueva`):
+  - Layout 2 columnas (8+4): picker de ítems + carrito | cliente + pago
+  - Carrito local con useState: agregar, quitar, acumular cantidad
+  - Selector de cliente: toggle Socio (autocomplete por nro/nombre) | Cliente (select)
+  - Método de pago: default Efectivo, selección de métodos activos
+  - Deducción automática de stock para ítems vinculados (egreso en Deposito Central)
+  - Diálogo de éxito con opción "Nueva Venta"
+
+- **P6.2** — Ventas Realizadas (`/ventas`):
+  - DataTable paginada 50/página
+  - Columnas: Fecha, Nro Venta, Cliente/Socio, Ítems, Total, Método Pago, Estado (badge), Acciones
+  - Filtros: rango fechas, estado (Todas/Activas/Anuladas)
+  - Detalle expandible: líneas de la venta con cantidad, precio, subtotal
+  - Anular venta: AlertDialog de confirmación, soft delete (no revierte stock)
+
+- **P6.3** — ABM Clientes (`/ventas/clientes`):
+  - DataTable: Apellido, Nombre, DNI, Email, Teléfono, Cant.Compras, Total Comprado
+  - Búsqueda por apellido, nombre o DNI
+  - ClienteForm: FormModal con validación Zod
+  - Computed columns: cant_compras y total_comprado via aggregate query
+
+- **P6.4** — ABM Ítems de Ventas (`/ventas/items`):
+  - DataTable: Nombre, Descripción, Precio (ARS), Stock vinculado, Estado (badge)
+  - ItemVentaForm: FormModal con Select para vincular a stock_item
+  - Al vender ítem vinculado, se descuenta stock automáticamente
+
+- **P6.5** — Reportes de Ventas (3 sub-rutas):
+  - Ventas Sumarizadas Mensual (`/ventas/reportes/mensual`): filtro año, tabla Mes/Cantidad/Total/Promedio con footer totales
+  - Ventas Sumarizadas Diaria (`/ventas/reportes/diaria`): filtro mes+año, tabla Fecha/Cantidad/Total
+  - Venta de Ítem por Período (`/ventas/reportes/por-item`): select ítem + rango fechas, tabla con detalle por venta + footer total
+
+- **P6.6** — Gráficos de Ventas (2 sub-rutas):
+  - Gráfico de Ventas (`/ventas/reportes/grafico-ventas`): LineChart ingresos mensuales últimos 12 meses
+  - Gráfico de Ítems (`/ventas/reportes/grafico-items`): BarChart horizontal top 10 ítems por ingreso + filtro período
+
+- **Pre-requisitos Fase 6:**
+  - Tipos TypeScript: Cliente, ItemVenta, Venta, VentaDetail, VentaItem, CartItem, NuevaVentaData, VentasSearchParams (src/types/ventas.ts)
+  - Zod schemas: clienteSchema, itemVentaSchema, nuevaVentaSchema con refine para cliente_id|socio_id (src/lib/schemas/ventas.ts)
+  - Componentes: ClienteForm, ItemVentaForm, CarritoVenta (src/components/ventas/)
+  - Componente shadcn/ui: alert-dialog instalado
+  - Seed: ~5 clientes, ~15 items_ventas (vinculados a stock), ~20 ventas demo Ene-Mar 2026 con ~60 líneas
+
 - **P5.1** — Inventario agrupado por depósito (`/stock`):
   - Vista custom con Collapsible por depósito (header azul claro)
   - Tabla interna: Ítem, Unidad, Cantidad (rojo+bold si ≤0, naranja si ≤10)

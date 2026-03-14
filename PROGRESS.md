@@ -16,7 +16,7 @@
 | 3 | SOCIOS | ✅ Completado | 7/7 |
 | 4 | TESORERÍA | ✅ Completado | 6/6 |
 | 5 | STOCK | ✅ Completado | 5/5 |
-| 6 | VENTAS | ⬜ Pendiente | — |
+| 6 | VENTAS | ✅ Completado | 6/6 |
 | 7 | ACTIVIDADES + TURNOS | ⬜ Pendiente | — |
 | 8 | Reportes avanzados | ⬜ Pendiente | — |
 | 9 | Security / RBAC | ⬜ Pendiente | — |
@@ -90,12 +90,12 @@
 
 | ID | Tarea | Estado | Fecha |
 |----|-------|--------|-------|
-| P6.1 | Formulario Nueva Venta (POS) | ⬜ | — |
-| P6.2 | Historial Ventas Realizadas | ⬜ | — |
-| P6.3 | ABM Clientes | ⬜ | — |
-| P6.4 | ABM Ítems de ventas | ⬜ | — |
-| P6.5 | Reportes: mensual, diaria, por ítem | ⬜ | — |
-| P6.6 | Gráficos de ventas e ítems | ⬜ | — |
+| P6.1 | Formulario Nueva Venta (POS) | ✅ | 2026-03-14 |
+| P6.2 | Historial Ventas Realizadas | ✅ | 2026-03-14 |
+| P6.3 | ABM Clientes | ✅ | 2026-03-14 |
+| P6.4 | ABM Ítems de ventas | ✅ | 2026-03-14 |
+| P6.5 | Reportes: mensual, diaria, por ítem | ✅ | 2026-03-14 |
+| P6.6 | Gráficos de ventas e ítems | ✅ | 2026-03-14 |
 
 ---
 
