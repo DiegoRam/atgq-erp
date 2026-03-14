@@ -22,5 +22,8 @@ The existing system ("Sistema de Socios y Control Administrativo") has these mai
 
 ## Directory Structure
 
+- `docs/PRD.md` — Product Requirements Document (full spec for all modules)
 - `docs/screenshots/` — Screenshots of the legacy system for reference
-- `plan/` — Planning documents (to be populated)
+- `plan/PROMPT_PLAN.md` — Implementation prompts organized in 9 phases (33 tasks)
+- `PROGRESS.md` — Task tracking board (status per phase/task)
+- `CHANGELOG.md` — Change history (Keep-a-Changelog format)
