@@ -10,6 +10,14 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P2.2** — Layout principal con header y navbar:
+  - Route group `(dashboard)` con layout que incluye header + navbar + área de contenido
+  - `AppHeader` (server component): título del club, usuario autenticado, fecha actual, botón logout
+  - `AppNavbar` (client component): 7 módulos con dropdowns (SOCIOS, ACTIVIDADES, TURNOS, VENTAS, STOCK, TESORERÍA, Security)
+  - Configuración de navegación centralizada en `src/lib/nav-config.ts` con todas las rutas y separadores
+  - Fondo azul oscuro (#1e3a5f) en navbar, replicando el estilo del sistema legacy
+  - Componentes shadcn/ui instalados: dropdown-menu, separator
+
 - **P2.1** — Autenticación con Supabase Auth:
   - Página de login (`/login`) con formulario email + password usando shadcn/ui (Card, Input, Button, Label)
   - Server Action para login (`signInWithPassword`) y logout (`signOut`) con redirect
