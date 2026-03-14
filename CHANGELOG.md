@@ -10,6 +10,15 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P1.3** — Migraciones SQL completas (schema inicial):
+  - `supabase/migrations/20260314000001_initial_schema.sql` con 25 tablas
+  - Módulos: SOCIOS (6 tablas), ACTIVIDADES (3), TURNOS (2), VENTAS (3), STOCK (3), TESORERÍA (3), SECURITY (3)
+  - UUIDs con `gen_random_uuid()`, timestamps con `timestamptz`
+  - Row Level Security habilitado en todas las tablas (policies pendientes P9.3)
+  - Índices en: socios(nro_socio, dni, categoria_id), cuotas(socio_id, periodo), movimientos_fondos(caja_id, fecha), ventas(fecha)
+  - Trigger `update_updated_at` para socios
+  - Fix: removido `health_timeout` de `config.toml` (incompatible con Supabase CLI v2.65.5)
+
 - **P1.2** — Configuración Supabase CLI local + clientes server/browser:
   - `@supabase/supabase-js` y `@supabase/ssr` instalados
   - `supabase init` ejecutado (`supabase/config.toml`)
