@@ -10,6 +10,50 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P4.6** — Reportes de TESORERÍA (4 sub-rutas):
+  - Sumarización de Conceptos (`/tesoreria/reportes/sumarizacion`): agrupado por categoría/tipo, filtros fecha + caja
+  - Concepto entre Fechas (`/tesoreria/reportes/concepto-fechas`): movimientos individuales filtrados por categoría y período
+  - Gráfico de Movimientos (`/tesoreria/reportes/grafico-movimientos`): LineChart de ingresos mensuales (12 meses), filtro por caja
+  - Gráfico de Mov. de Salidas (`/tesoreria/reportes/grafico-salidas`): BarChart de egresos por categoría, filtro por período
+
+- **P4.4** — Transferencias entre cajas (`/tesoreria/transferencias`):
+  - Formulario de transferencia: caja origen (con saldo), caja destino, monto, descripción, fecha
+  - Validación: origen ≠ destino, monto ≤ saldo disponible
+  - Lógica: crea par de movimientos enlazados con referencia_id cruzada
+  - Tabla de últimas 20 transferencias
+  - Seed: categorías "Transferencia" (ingreso + egreso) para uso interno
+
+- **P4.3** — Historial Movimientos de Fondos (`/tesoreria/movimientos`):
+  - DataTable con paginación 50/página
+  - Columnas: Fecha, Caja, Tipo (badge color), Categoría, Descripción, Monto (color +/-)
+  - Filtros: rango fechas, caja, tipo, categoría
+  - Footer con totales: ingresos, egresos, balance neto
+  - Export CSV
+  - Soporta query param `?caja=UUID` para link desde ABM Cajas
+
+- **P4.2** — Formulario Ingresar Movimiento (`/tesoreria/movimientos/nuevo`):
+  - Full-page form con Card: Tipo (ingreso/egreso), Caja, Categoría (filtrada por tipo), Monto, Descripción, Fecha
+  - Obtiene usuario autenticado vía `supabase.auth.getUser()`
+  - Toast de éxito con nuevo saldo calculado + botón "Registrar otro"
+  - Seed: ~30 movimientos distribuidos Ene-Mar 2026 en 3 cajas (usando bloque DO $$ con user lookup)
+
+- **P4.1** — ABM Cajas (`/tesoreria/cajas`):
+  - DataTable: Nombre, Descripción, Saldo Actual (calculado, con color), Estado (badge), Acciones (editar, ver movimientos)
+  - Saldo calculado: `saldo_inicial + SUM(ingresos) - SUM(egresos)` vía aggregate query
+  - CajaForm: FormModal con Nombre (unique), Descripción, Saldo Inicial, Activa (switch)
+  - Seed: 3 cajas (Principal $50.000, Chica $5.000, Actividades $10.000)
+
+- **P4.5** — Config: Categorías de Movimientos (`/tesoreria/config/categorias`):
+  - DataTable con columnas: Nombre, Tipo (badge verde/rojo), Estado (badge Activa/Inactiva), Acciones (editar)
+  - CategoriaMovimientoForm: FormModal con Nombre, Tipo (select ingreso/egreso), Activa (switch)
+  - Server actions: getCategorias, createCategoria, updateCategoria (con manejo de unique constraint)
+
+- **Pre-requisitos Fase 4:**
+  - Tipos TypeScript: Caja, CategoriaMovimiento, MovimientoFondo, *FormData, MovimientosSearchParams (src/types/tesoreria.ts)
+  - Zod schemas: categoriaMovimientoSchema, cajaSchema, movimientoSchema, transferenciaSchema (src/lib/schemas/tesoreria.ts)
+  - Componente shadcn/ui: Switch instalado
+  - Seed extendido: 3 cajas, 2 categorías transferencia, ~30 movimientos demo
+
 - **P3.7** — Reportes de SOCIOS:
   - Socios por Categorías (`/socios/reportes/categorias`): tabla con % y BarChart (recharts)
   - Socios por Edades (`/socios/reportes/edades`): rangos 0-17, 18-30, 31-45, 46-60, 61+, Sin dato + BarChart

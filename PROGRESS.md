@@ -14,7 +14,7 @@
 | 1 | Scaffold + Base de datos | ✅ Completado | 4/4 |
 | 2 | Auth + Layout | ✅ Completado | 4/4 |
 | 3 | SOCIOS | ✅ Completado | 7/7 |
-| 4 | TESORERÍA | ⬜ Pendiente | — |
+| 4 | TESORERÍA | ✅ Completado | 6/6 |
 | 5 | STOCK | ⬜ Pendiente | — |
 | 6 | VENTAS | ⬜ Pendiente | — |
 | 7 | ACTIVIDADES + TURNOS | ⬜ Pendiente | — |
@@ -65,12 +65,12 @@
 
 | ID | Tarea | Estado | Fecha |
 |----|-------|--------|-------|
-| P4.1 | ABM Cajas (con saldo calculado) | ⬜ | — |
-| P4.2 | Formulario Ingresar Movimiento | ⬜ | — |
-| P4.3 | Historial Movimientos de Fondos con filtros | ⬜ | — |
-| P4.4 | Transferencias entre cajas | ⬜ | — |
-| P4.5 | Config: Categorías de movimientos | ⬜ | — |
-| P4.6 | Reportes: sumarización, concepto entre fechas, gráficos | ⬜ | — |
+| P4.1 | ABM Cajas (con saldo calculado) | ✅ | 2026-03-14 |
+| P4.2 | Formulario Ingresar Movimiento | ✅ | 2026-03-14 |
+| P4.3 | Historial Movimientos de Fondos con filtros | ✅ | 2026-03-14 |
+| P4.4 | Transferencias entre cajas | ✅ | 2026-03-14 |
+| P4.5 | Config: Categorías de movimientos | ✅ | 2026-03-14 |
+| P4.6 | Reportes: sumarización, concepto entre fechas, gráficos | ✅ | 2026-03-14 |
 
 ---
 
