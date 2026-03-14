@@ -10,6 +10,41 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P5.1** — Inventario agrupado por depósito (`/stock`):
+  - Vista custom con Collapsible por depósito (header azul claro)
+  - Tabla interna: Ítem, Unidad, Cantidad (rojo+bold si ≤0, naranja si ≤10)
+  - Banner amarillo de alerta si hay ítems con stock negativo
+  - Export CSV con columnas: Depósito, Ítem, Unidad, Cantidad
+
+- **P5.2** — Formulario Ingresos/Egresos de Stock (`/stock/movimientos/nuevo`):
+  - Full-page form con Card: Tipo (ingreso/egreso), Depósito, Ítem, Cantidad, Motivo
+  - Motivo requerido para egresos (validación Zod refine)
+  - Info dinámica: muestra stock actual al seleccionar depósito + ítem
+  - UPSERT stock_inventario + INSERT movimientos_stock
+  - Toast con nuevo stock, warning naranja si queda negativo
+
+- **P5.3** — Historial Movimientos de Stock (`/stock/movimientos`):
+  - DataTable con paginación 50/página
+  - Columnas: Fecha, Ítem (join), Depósito (join), Tipo (badge color), Cantidad, Motivo
+  - Filtros: Ítem, Depósito, Tipo, Desde, Hasta
+  - Export CSV
+
+- **P5.4** — ABM Depósitos (`/stock/depositos`):
+  - DataTable: Nombre, Descripción, Estado (badge), Ítems en Stock, Acciones (editar)
+  - DepositoForm: FormModal con Nombre (unique), Descripción, Activo (switch)
+  - Validación: no se puede desactivar depósito con ítems en stock
+
+- **P5.5** — ABM Ítems de Stock (`/stock/items`):
+  - DataTable: Nombre, Descripción, Unidad, Stock Total (rojo ≤0, naranja ≤10), Estado, Acciones
+  - StockItemForm: FormModal con Nombre, Descripción, Unidad, Activo, Stock Inicial (solo create)
+  - Stock inicial: crea inventario en Deposito Central + movimiento de ingreso
+
+- **Pre-requisitos Fase 5:**
+  - Tipos TypeScript: Deposito, StockItem, InventarioRow, MovimientoStock, *FormData, SearchParams (src/types/stock.ts)
+  - Zod schemas: depositoSchema, stockItemSchema, movimientoStockSchema con refine para motivo (src/lib/schemas/stock.ts)
+  - Nav-config: agregado "Ítems de Stock" al menú STOCK
+  - Seed: ~15 stock items (blancos, cartuchos, protección, limpieza), inventario con cantidades variadas (incluye negativo), ~10 movimientos demo Ene-Mar 2026
+
 - **P4.6** — Reportes de TESORERÍA (4 sub-rutas):
   - Sumarización de Conceptos (`/tesoreria/reportes/sumarizacion`): agrupado por categoría/tipo, filtros fecha + caja
   - Concepto entre Fechas (`/tesoreria/reportes/concepto-fechas`): movimientos individuales filtrados por categoría y período

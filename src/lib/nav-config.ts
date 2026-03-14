@@ -80,6 +80,7 @@ export const NAV_MODULES: NavModule[] = [
       { label: "Movimientos de Stock", href: "/stock/movimientos" },
       sep,
       { label: "Depósitos", href: "/stock/depositos" },
+      { label: "Ítems de Stock", href: "/stock/items" },
     ],
   },
   {

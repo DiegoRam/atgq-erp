@@ -15,7 +15,7 @@
 | 2 | Auth + Layout | ✅ Completado | 4/4 |
 | 3 | SOCIOS | ✅ Completado | 7/7 |
 | 4 | TESORERÍA | ✅ Completado | 6/6 |
-| 5 | STOCK | ⬜ Pendiente | — |
+| 5 | STOCK | ✅ Completado | 5/5 |
 | 6 | VENTAS | ⬜ Pendiente | — |
 | 7 | ACTIVIDADES + TURNOS | ⬜ Pendiente | — |
 | 8 | Reportes avanzados | ⬜ Pendiente | — |
@@ -78,11 +78,11 @@
 
 | ID | Tarea | Estado | Fecha |
 |----|-------|--------|-------|
-| P5.1 | Inventario agrupado por depósito (con alertas stock negativo) | ⬜ | — |
-| P5.2 | Formulario Ingresos/Egresos de stock | ⬜ | — |
-| P5.3 | Historial movimientos de stock | ⬜ | — |
-| P5.4 | ABM Depósitos | ⬜ | — |
-| P5.5 | ABM Ítems de stock | ⬜ | — |
+| P5.1 | Inventario agrupado por depósito (con alertas stock negativo) | ✅ | 2026-03-14 |
+| P5.2 | Formulario Ingresos/Egresos de stock | ✅ | 2026-03-14 |
+| P5.3 | Historial movimientos de stock | ✅ | 2026-03-14 |
+| P5.4 | ABM Depósitos | ✅ | 2026-03-14 |
+| P5.5 | ABM Ítems de stock | ✅ | 2026-03-14 |
 
 ---
 
