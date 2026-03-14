@@ -10,6 +10,59 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P3.7** — Reportes de SOCIOS:
+  - Socios por Categorías (`/socios/reportes/categorias`): tabla con % y BarChart (recharts)
+  - Socios por Edades (`/socios/reportes/edades`): rangos 0-17, 18-30, 31-45, 46-60, 61+, Sin dato + BarChart
+  - Cuotas cobradas mensualmente (`/socios/reportes/cuotas-mensuales`): filtro por rango de fechas, tabla + LineChart
+  - Socios por Localidad (`/socios/reportes/localidad`): tabla descendente + export CSV
+  - Componente compartido `ReportLayout` para estructura consistente de reportes
+
+- **P3.6** — Padrón exportable (`/socios/padron`):
+  - Tabla completa sin paginación de todos los socios activos (excluye BAJA y fecha_baja)
+  - Filtro por categoría con Select
+  - Export CSV y botón Imprimir con estilos `@media print`
+
+- **P3.5** — Gestión de cuotas:
+  - Vista por socio (`/socios/[id]/cuotas`): tabla de cuotas con estado (badge Pagada/Impaga), fecha pago, método
+  - Registrar Pago: modal con monto, fecha, método de pago (RegistrarPagoForm)
+  - Generación masiva (`/socios/cuotas/generar`): selección mes/año/tipo/monto, vista previa con conteo, confirmación
+  - Redirect `/socios/cuotas` → `/socios/cuotas/generar`
+
+- **P3.4** — Socios morosos (`/socios/morosos`):
+  - DataTable con paginación server-side usando RPC `get_socios_morosos`
+  - Columnas: cuotas impagas (rojo bold si >3), monto adeudado, última cuota pagada
+  - Export CSV de todos los morosos
+
+- **P3.3** — Grupos familiares (`/socios/grupos-familiares`):
+  - Tabla con filas expandibles mostrando miembros del grupo
+  - Modal para crear grupo familiar con búsqueda de titular y miembros (autocomplete)
+  - Acciones: agregar/remover miembros de grupo
+
+- **P3.2** — Formulario alta/edición de socio:
+  - SocioForm: modal FormModal size="lg" con grid 2 columnas
+  - Campos: Nro Socio (auto-suggest), Apellido (uppercase), Nombre, DNI (unique check), Categoría, Método Cobranza, Fecha Alta/Baja, Localidad, Fecha Nacimiento
+  - Validación Zod con react-hook-form + @hookform/resolvers
+  - Toast feedback con sonner (éxito/error)
+  - Server actions: createSocio, updateSocio, getNextNroSocio, checkDniUnique
+
+- **P3.1** — Tabla de socios con paginación server-side:
+  - Página `/socios` con DataTable (50/page) + FacetFilter sidebar por Categoría
+  - Columnas: Nro Socio (link clickable para editar), Apellido, Nombre, DNI, Categoría, Fecha Alta, Antigüedad (calc), Fecha Baja, Pagas, Impagas, Cobranza
+  - Búsqueda debounced por apellido/nombre/DNI
+  - Ordenamiento server-side, filtro por categorías múltiples
+  - Server actions con Supabase: getSocios (paginado + join categoría/cobranza + conteo cuotas)
+
+- **Pre-requisitos Fase 3:**
+  - Migración RLS: políticas `authenticated_all` en todas las tablas
+  - Migración RPCs: `get_category_counts`, `get_socios_morosos`, `get_socios_por_categoria`, `get_socios_por_edad`, `get_cuotas_mensuales`, `get_socios_por_localidad`
+  - Componentes shadcn/ui: select, popover, calendar, command, sonner, collapsible, scroll-area
+  - Toaster (sonner) integrado en dashboard layout
+  - Utilidades: `formatDate`, `formatAntiguedad`, `formatCurrency`, `exportToCSV` (src/lib/format.ts)
+  - Tipos TypeScript: Socio, SocioFormData, Cuota, GrupoFamiliar, SocioMoroso, etc. (src/types/socios.ts)
+  - Hook `useDebounce` para búsqueda (src/hooks/useDebounce.ts)
+  - DataTable: soporte para prop `meta` (permite pasar callbacks como onEdit a columnas)
+  - @hookform/resolvers instalado para integración zod + react-hook-form
+
 - **P2.4** — Componentes base reutilizables:
   - `DataTable`: tabla genérica con @tanstack/react-table, paginación server-side, búsqueda, toggle columnas, skeleton loading, export CSV, ordenamiento
   - `FacetFilter`: sidebar de filtros con checkboxes, conteos y "Ver más/menos"

@@ -13,7 +13,7 @@
 |------|--------|--------|------------|
 | 1 | Scaffold + Base de datos | ✅ Completado | 4/4 |
 | 2 | Auth + Layout | ✅ Completado | 4/4 |
-| 3 | SOCIOS | ⬜ Pendiente | — |
+| 3 | SOCIOS | ✅ Completado | 7/7 |
 | 4 | TESORERÍA | ⬜ Pendiente | — |
 | 5 | STOCK | ⬜ Pendiente | — |
 | 6 | VENTAS | ⬜ Pendiente | — |
@@ -51,13 +51,13 @@
 
 | ID | Tarea | Estado | Fecha |
 |----|-------|--------|-------|
-| P3.1 | Tabla de socios con paginación server-side + sidebar filtros | ⬜ | — |
-| P3.2 | Formulario alta/edición de socio | ⬜ | — |
-| P3.3 | Vista grupos familiares | ⬜ | — |
-| P3.4 | Vista socios morosos | ⬜ | — |
-| P3.5 | Gestión de cuotas (ver, pagar, generar masivo) | ⬜ | — |
-| P3.6 | Padrón exportable | ⬜ | — |
-| P3.7 | Reportes: por categoría, edad, localidad, cuotas mensuales | ⬜ | — |
+| P3.1 | Tabla de socios con paginación server-side + sidebar filtros | ✅ | 2026-03-14 |
+| P3.2 | Formulario alta/edición de socio | ✅ | 2026-03-14 |
+| P3.3 | Vista grupos familiares | ✅ | 2026-03-14 |
+| P3.4 | Vista socios morosos | ✅ | 2026-03-14 |
+| P3.5 | Gestión de cuotas (ver, pagar, generar masivo) | ✅ | 2026-03-14 |
+| P3.6 | Padrón exportable | ✅ | 2026-03-14 |
+| P3.7 | Reportes: por categoría, edad, localidad, cuotas mensuales | ✅ | 2026-03-14 |
 
 ---
 
