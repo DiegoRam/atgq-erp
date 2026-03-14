@@ -51,10 +51,13 @@ export function TurnoForm({
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<TurnoSchemaType>({
     resolver: zodResolver(turnoSchema),
   });
+
+  const instalacionIdValue = watch("instalacion_id");
 
   const searchSocios = useCallback(async (term: string) => {
     if (term.length < 2) {
@@ -151,7 +154,7 @@ export function TurnoForm({
 
         <div className="space-y-1">
           <Label>Instalación</Label>
-          <Select onValueChange={(v) => setValue("instalacion_id", v)}>
+          <Select value={instalacionIdValue || undefined} onValueChange={(v) => setValue("instalacion_id", v)}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar instalación..." />
             </SelectTrigger>
