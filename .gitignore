@@ -30,6 +30,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Test screenshots
+tests/screenshots/
+
 # Claude Code / claude-mem plugin
 .claude/
 **/CLAUDE.md

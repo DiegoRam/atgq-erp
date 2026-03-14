@@ -51,6 +51,7 @@ interface DataTableProps<TData, TValue> {
   newButtonLabel?: string;
   onExportCSV?: () => void;
   searchPlaceholder?: string;
+  meta?: Record<string, unknown>;
 }
 
 export function DataTable<TData, TValue>({
@@ -67,6 +68,7 @@ export function DataTable<TData, TValue>({
   newButtonLabel = "Nuevo",
   onExportCSV,
   searchPlaceholder = "Buscar...",
+  meta,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -79,6 +81,7 @@ export function DataTable<TData, TValue>({
     manualPagination: true,
     manualSorting: true,
     pageCount: Math.ceil(totalCount / pageSize),
+    meta,
     state: {
       sorting,
       columnVisibility,
