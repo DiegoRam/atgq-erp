@@ -11,7 +11,7 @@
 
 | Fase | Nombre | Estado | Completado |
 |------|--------|--------|------------|
-| 1 | Scaffold + Base de datos | 🔄 En progreso | 1/4 |
+| 1 | Scaffold + Base de datos | 🔄 En progreso | 2/4 |
 | 2 | Auth + Layout | ⬜ Pendiente | — |
 | 3 | SOCIOS | ⬜ Pendiente | — |
 | 4 | TESORERÍA | ⬜ Pendiente | — |
@@ -30,7 +30,7 @@
 | ID | Tarea | Estado | Fecha |
 |----|-------|--------|-------|
 | P1.1 | Inicializar proyecto Next.js 14 + TypeScript + Tailwind + shadcn/ui | ✅ | 2026-03-14 |
-| P1.2 | Configurar Supabase CLI local + clientes server/browser | ⬜ | — |
+| P1.2 | Configurar Supabase CLI local + clientes server/browser | ✅ | 2026-03-14 |
 | P1.3 | Crear migraciones SQL completas (schema completo) | ⬜ | — |
 | P1.4 | Seed data inicial (categorías, roles, depósito, etc.) | ⬜ | — |
 

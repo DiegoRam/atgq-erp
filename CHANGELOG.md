@@ -10,6 +10,15 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P1.2** — Configuración Supabase CLI local + clientes server/browser:
+  - `@supabase/supabase-js` y `@supabase/ssr` instalados
+  - `supabase init` ejecutado (`supabase/config.toml`)
+  - `.env.example` con template de variables, `.env.local` con keys default de desarrollo
+  - Cliente browser (`src/lib/supabase/client.ts`) con `createBrowserClient`
+  - Cliente server (`src/lib/supabase/server.ts`) con `createServerClient` + cookies sync (Next.js 14)
+  - Middleware helper (`src/lib/supabase/middleware.ts`) con `updateSession` usando `getUser()`
+  - Next.js middleware (`src/middleware.ts`) con matcher que excluye assets estáticos
+
 - **P1.1** — Scaffold inicial del proyecto:
   - Next.js 14.2.35 con App Router, TypeScript strict, Tailwind CSS v3
   - shadcn/ui configurado (components.json, CSS variables, `cn()` utility)
