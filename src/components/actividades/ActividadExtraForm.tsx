@@ -115,7 +115,7 @@ export function ActividadExtraForm({
             id="monto"
             type="number"
             step="0.01"
-            {...register("monto", { valueAsNumber: true })}
+            {...register("monto", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
           />
           {errors.monto && (
             <p className="text-xs text-red-500">{errors.monto.message}</p>

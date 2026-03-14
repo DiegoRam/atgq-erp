@@ -29,16 +29,32 @@ export async function getActividadesDisponibles() {
 
 export async function inscribirEnActividad(socioId: string, actividadId: string) {
   const supabase = createClient();
-  const { error } = await supabase.from("socios_actividades").insert({
-    socio_id: socioId,
-    actividad_id: actividadId,
-    activa: true,
-  });
-  if (error) {
-    if (error.code === "23505") {
+
+  // Check if there's an existing (inactive) inscription to reactivate
+  const { data: existing } = await supabase
+    .from("socios_actividades")
+    .select("id, activa")
+    .eq("socio_id", socioId)
+    .eq("actividad_id", actividadId)
+    .single();
+
+  if (existing) {
+    if (existing.activa) {
       throw new Error("El socio ya está inscripto en esta actividad");
     }
-    throw new Error(error.message);
+    // Reactivate
+    const { error } = await supabase
+      .from("socios_actividades")
+      .update({ activa: true, fecha_inscripcion: new Date().toISOString().split("T")[0] })
+      .eq("id", existing.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("socios_actividades").insert({
+      socio_id: socioId,
+      actividad_id: actividadId,
+      activa: true,
+    });
+    if (error) throw new Error(error.message);
   }
   revalidatePath(`/socios/${socioId}/actividades`);
   revalidatePath("/actividades");

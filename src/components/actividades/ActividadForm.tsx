@@ -115,7 +115,7 @@ export function ActividadForm({
             id="monto_cuota"
             type="number"
             step="0.01"
-            {...register("monto_cuota", { valueAsNumber: true })}
+            {...register("monto_cuota", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
           />
           {errors.monto_cuota && (
             <p className="text-xs text-red-500">{errors.monto_cuota.message}</p>
