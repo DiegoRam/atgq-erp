@@ -7,7 +7,8 @@ import { FacetFilter } from "@/components/shared/FacetFilter";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getSocios, getCategoryCounts } from "./actions";
 import { useDebounce } from "@/hooks/useDebounce";
-import { formatDate, formatAntiguedad } from "@/lib/format";
+import { formatDate, formatAntiguedad, exportToCSV } from "@/lib/format";
+import { exportToExcel } from "@/lib/export";
 import type { Socio, CategoriaCount, SociosSearchParams } from "@/types/socios";
 import { SocioForm } from "@/components/socios/SocioForm";
 
@@ -146,6 +147,40 @@ export default function SociosPage() {
     getCategoryCounts().then(setCategoryCounts);
   }
 
+  const exportHeaders = [
+    { key: "nro_socio", label: "Nro Socio" },
+    { key: "apellido", label: "Apellido" },
+    { key: "nombre", label: "Nombre" },
+    { key: "dni", label: "DNI" },
+    { key: "categoria", label: "Categoría" },
+    { key: "fecha_alta", label: "Fecha Alta" },
+    { key: "cuotas_pagas", label: "Pagas" },
+    { key: "cuotas_impagas", label: "Impagas" },
+    { key: "cobranza", label: "Cobranza" },
+  ];
+
+  function getExportData() {
+    return data.map((s) => ({
+      nro_socio: s.nro_socio,
+      apellido: s.apellido,
+      nombre: s.nombre,
+      dni: s.dni,
+      categoria: s.categoria?.nombre ?? "",
+      fecha_alta: s.fecha_alta,
+      cuotas_pagas: s.cuotas_pagas ?? 0,
+      cuotas_impagas: s.cuotas_impagas ?? 0,
+      cobranza: s.metodo_cobranza?.nombre ?? "",
+    }));
+  }
+
+  function handleExportCSV() {
+    exportToCSV(getExportData(), "socios", exportHeaders);
+  }
+
+  function handleExportExcel() {
+    exportToExcel(getExportData(), "socios", "Socios", exportHeaders);
+  }
+
   const tableColumns = columns.map((col) => col);
 
   return (
@@ -177,6 +212,8 @@ export default function SociosPage() {
             isLoading={isLoading}
             onNewClick={handleNew}
             newButtonLabel="Nuevo Socio"
+            onExportCSV={handleExportCSV}
+            onExportExcel={handleExportExcel}
             searchPlaceholder="Buscar por apellido, nombre o DNI..."
             meta={{ onEdit: handleEdit }}
           />

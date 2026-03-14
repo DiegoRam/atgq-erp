@@ -18,7 +18,7 @@
 | 5 | STOCK | ✅ Completado | 5/5 |
 | 6 | VENTAS | ✅ Completado | 6/6 |
 | 7 | ACTIVIDADES + TURNOS | ✅ Completado | 5/5 |
-| 8 | Reportes avanzados | ⬜ Pendiente | — |
+| 8 | Reportes avanzados | ✅ Completado | 3/3 |
 | 9 | Security / RBAC | ⬜ Pendiente | — |
 
 **Leyenda:** ⬜ Pendiente · 🔄 En progreso · ✅ Completado
@@ -115,9 +115,9 @@
 
 | ID | Tarea | Estado | Fecha |
 |----|-------|--------|-------|
-| P8.1 | Dashboard home con KPIs | ⬜ | — |
-| P8.2 | Exportación Excel (xlsx) en reportes principales | ⬜ | — |
-| P8.3 | Config SOCIOS: categorías sociales, tipos cuotas, cobranzas | ⬜ | — |
+| P8.1 | Dashboard home con KPIs | ✅ | 2026-03-14 |
+| P8.2 | Exportación Excel (xlsx) en reportes principales | ✅ | 2026-03-14 |
+| P8.3 | Config SOCIOS: categorías sociales, tipos cuotas, cobranzas | ✅ | 2026-03-14 |
 
 ---
 

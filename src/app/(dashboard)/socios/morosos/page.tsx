@@ -6,6 +6,7 @@ import { DataTable } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getSociosMorosos, getAllMorosos } from "./actions";
 import { formatDate, formatCurrency, exportToCSV } from "@/lib/format";
+import { exportToExcel } from "@/lib/export";
 import type { SocioMoroso } from "@/types/socios";
 
 const PAGE_SIZE = 50;
@@ -61,21 +62,33 @@ export default function MorososPage() {
     fetchData();
   }, [fetchData]);
 
+  const morososHeaders = [
+    { key: "nro_socio", label: "Nro Socio" },
+    { key: "apellido", label: "Apellido" },
+    { key: "nombre", label: "Nombre" },
+    { key: "dni", label: "DNI" },
+    { key: "categoria", label: "Categoría" },
+    { key: "cuotas_impagas", label: "Cuotas Impagas" },
+    { key: "monto_adeudado", label: "Monto Adeudado" },
+    { key: "ultima_cuota_pagada", label: "Última Cuota Pagada" },
+  ];
+
   async function handleExportCSV() {
     const all = await getAllMorosos();
     exportToCSV(
       all as unknown as Record<string, unknown>[],
       "socios_morosos",
-      [
-        { key: "nro_socio", label: "Nro Socio" },
-        { key: "apellido", label: "Apellido" },
-        { key: "nombre", label: "Nombre" },
-        { key: "dni", label: "DNI" },
-        { key: "categoria", label: "Categoría" },
-        { key: "cuotas_impagas", label: "Cuotas Impagas" },
-        { key: "monto_adeudado", label: "Monto Adeudado" },
-        { key: "ultima_cuota_pagada", label: "Última Cuota Pagada" },
-      ],
+      morososHeaders,
+    );
+  }
+
+  async function handleExportExcel() {
+    const all = await getAllMorosos();
+    exportToExcel(
+      all as unknown as Record<string, unknown>[],
+      "socios_morosos",
+      "Morosos",
+      morososHeaders,
     );
   }
 
@@ -91,6 +104,7 @@ export default function MorososPage() {
         onPageChange={setPage}
         isLoading={isLoading}
         onExportCSV={handleExportCSV}
+        onExportExcel={handleExportExcel}
       />
     </div>
   );

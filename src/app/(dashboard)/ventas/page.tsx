@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronDown, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { formatDate, formatCurrency } from "@/lib/format";
+import { formatDate, formatCurrency, exportToCSV } from "@/lib/format";
+import { exportToExcel } from "@/lib/export";
 import { getVentas, getVentaDetalle, anularVenta } from "./actions";
 import type { Venta, VentaItem, VentasSearchParams } from "@/types/ventas";
 
@@ -190,6 +191,39 @@ export default function VentasRealizadasPage() {
     setExpandedVenta(venta.id);
   }
 
+  const ventasHeaders = [
+    { key: "fecha", label: "Fecha" },
+    { key: "nro_venta", label: "Nro Venta" },
+    { key: "cliente", label: "Cliente / Socio" },
+    { key: "total", label: "Total" },
+    { key: "metodo_pago", label: "Método Pago" },
+    { key: "estado", label: "Estado" },
+  ];
+
+  function getExportData() {
+    return data.map((v) => ({
+      fecha: formatDate(v.fecha),
+      nro_venta: v.id.slice(0, 8).toUpperCase(),
+      cliente: clienteNombre(v),
+      total: v.total,
+      metodo_pago: v.metodo_pago?.nombre ?? "",
+      estado: v.anulada ? "Anulada" : "Activa",
+    }));
+  }
+
+  function handleExportCSV() {
+    exportToCSV(getExportData(), "ventas_realizadas", ventasHeaders);
+  }
+
+  function handleExportExcel() {
+    exportToExcel(
+      getExportData(),
+      "ventas_realizadas",
+      "Ventas",
+      ventasHeaders,
+    );
+  }
+
   async function handleConfirmAnular() {
     if (!anularTarget) return;
     try {
@@ -250,6 +284,8 @@ export default function VentasRealizadasPage() {
         pageSize={PAGE_SIZE}
         onPageChange={setPage}
         isLoading={isLoading}
+        onExportCSV={handleExportCSV}
+        onExportExcel={handleExportExcel}
         meta={{
           onAnular: setAnularTarget,
           onExpand: handleExpand,

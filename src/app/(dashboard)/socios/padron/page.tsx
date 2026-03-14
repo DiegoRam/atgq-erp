@@ -19,10 +19,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Printer } from "lucide-react";
+import { Download, FileSpreadsheet, Printer } from "lucide-react";
 import { getPadron } from "./actions";
 import { getCategorias } from "../actions";
 import { formatDate, exportToCSV } from "@/lib/format";
+import { exportToExcel } from "@/lib/export";
 import type { Socio, CategoriaSocial } from "@/types/socios";
 
 export default function PadronPage() {
@@ -51,18 +52,29 @@ export default function PadronPage() {
     getCategorias().then(setCategorias);
   }, []);
 
+  const padronHeaders = [
+    { key: "nro_socio", label: "Nro Socio" },
+    { key: "apellido", label: "Apellido" },
+    { key: "nombre", label: "Nombre" },
+    { key: "dni", label: "DNI" },
+    { key: "fecha_alta", label: "Fecha Alta" },
+    { key: "localidad", label: "Localidad" },
+  ];
+
   function handleExportCSV() {
     exportToCSV(
       socios as unknown as Record<string, unknown>[],
       "padron_socios",
-      [
-        { key: "nro_socio", label: "Nro Socio" },
-        { key: "apellido", label: "Apellido" },
-        { key: "nombre", label: "Nombre" },
-        { key: "dni", label: "DNI" },
-        { key: "fecha_alta", label: "Fecha Alta" },
-        { key: "localidad", label: "Localidad" },
-      ],
+      padronHeaders,
+    );
+  }
+
+  function handleExportExcel() {
+    exportToExcel(
+      socios as unknown as Record<string, unknown>[],
+      "padron_socios",
+      "Padrón",
+      padronHeaders,
     );
   }
 
@@ -91,6 +103,10 @@ export default function PadronPage() {
             <Button variant="outline" size="sm" onClick={handleExportCSV}>
               <Download className="mr-1.5 h-4 w-4" />
               CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+              Excel
             </Button>
             <Button
               variant="outline"

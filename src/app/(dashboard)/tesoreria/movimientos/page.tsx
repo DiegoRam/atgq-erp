@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDate, formatCurrency, exportToCSV } from "@/lib/format";
+import { exportToExcel } from "@/lib/export";
 import {
   getMovimientos,
   getCajasParaFiltro,
@@ -150,25 +151,36 @@ export default function MovimientosPage() {
     setPage(1);
   }, [cajaId, tipo, categoriaId, fechaDesde, fechaHasta]);
 
+  const movimientosHeaders = [
+    { key: "fecha", label: "Fecha" },
+    { key: "caja", label: "Caja" },
+    { key: "tipo", label: "Tipo" },
+    { key: "categoria", label: "Categoría" },
+    { key: "descripcion", label: "Descripción" },
+    { key: "monto", label: "Monto" },
+  ];
+
+  function getExportData() {
+    return data.map((m) => ({
+      fecha: formatDate(m.fecha),
+      caja: m.caja?.nombre ?? "",
+      tipo: m.tipo,
+      categoria: m.categoria?.nombre ?? "",
+      descripcion: m.descripcion ?? "",
+      monto: m.monto,
+    }));
+  }
+
   function handleExportCSV() {
-    exportToCSV(
-      data.map((m) => ({
-        fecha: formatDate(m.fecha),
-        caja: m.caja?.nombre ?? "",
-        tipo: m.tipo,
-        categoria: m.categoria?.nombre ?? "",
-        descripcion: m.descripcion ?? "",
-        monto: m.monto,
-      })),
+    exportToCSV(getExportData(), "movimientos_fondos", movimientosHeaders);
+  }
+
+  function handleExportExcel() {
+    exportToExcel(
+      getExportData(),
       "movimientos_fondos",
-      [
-        { key: "fecha", label: "Fecha" },
-        { key: "caja", label: "Caja" },
-        { key: "tipo", label: "Tipo" },
-        { key: "categoria", label: "Categoría" },
-        { key: "descripcion", label: "Descripción" },
-        { key: "monto", label: "Monto" },
-      ],
+      "Movimientos",
+      movimientosHeaders,
     );
   }
 
@@ -259,6 +271,7 @@ export default function MovimientosPage() {
         onPageChange={setPage}
         isLoading={isLoading}
         onExportCSV={handleExportCSV}
+        onExportExcel={handleExportExcel}
       />
 
       {/* Totals footer */}

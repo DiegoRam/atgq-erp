@@ -97,3 +97,28 @@ export interface SocioMoroso {
   monto_adeudado: number;
   ultima_cuota_pagada: string | null;
 }
+
+export interface TipoCuota {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  activo: boolean;
+}
+
+export interface CategoriaSocialFormData {
+  nombre: string;
+  descripcion?: string | null;
+  monto_base?: number | null;
+  activa: boolean;
+}
+
+export interface TipoCuotaFormData {
+  nombre: string;
+  descripcion?: string | null;
+  activo: boolean;
+}
+
+export interface MetodoCobranzaFormData {
+  nombre: string;
+  activo: boolean;
+}

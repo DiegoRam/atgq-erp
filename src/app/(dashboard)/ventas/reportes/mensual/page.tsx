@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { FileSpreadsheet } from "lucide-react";
 import { ReportLayout } from "@/components/shared/ReportLayout";
+import { exportToExcel } from "@/lib/export";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -48,9 +51,34 @@ export default function ReporteMensualPage() {
   const totalVentas = data.reduce((s, d) => s + d.cantidad, 0);
   const totalMonto = data.reduce((s, d) => s + d.total, 0);
 
+  function handleExportExcel() {
+    exportToExcel(
+      data.filter((d) => d.cantidad > 0).map((d) => ({
+        mes: d.mes,
+        cantidad: d.cantidad,
+        total: d.total,
+        promedio: d.promedio,
+      })),
+      `ventas_mensual_${anio}`,
+      "Ventas Mensual",
+      [
+        { key: "mes", label: "Mes" },
+        { key: "cantidad", label: "Cantidad" },
+        { key: "total", label: "Total" },
+        { key: "promedio", label: "Promedio" },
+      ],
+    );
+  }
+
   return (
     <ReportLayout
       title="Ventas Sumarizadas Mensual"
+      actions={
+        <Button variant="outline" size="sm" onClick={handleExportExcel}>
+          <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+          Excel
+        </Button>
+      }
       filters={
         <div className="space-y-1">
           <Label className="text-xs">Año</Label>

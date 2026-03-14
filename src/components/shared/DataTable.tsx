@@ -31,6 +31,7 @@ import {
   ChevronRight,
   Columns3,
   Download,
+  FileSpreadsheet,
   Plus,
   Search,
   ArrowUp,
@@ -50,6 +51,7 @@ interface DataTableProps<TData, TValue> {
   onNewClick?: () => void;
   newButtonLabel?: string;
   onExportCSV?: () => void;
+  onExportExcel?: () => void;
   searchPlaceholder?: string;
   meta?: Record<string, unknown>;
 }
@@ -67,6 +69,7 @@ export function DataTable<TData, TValue>({
   onNewClick,
   newButtonLabel = "Nuevo",
   onExportCSV,
+  onExportExcel,
   searchPlaceholder = "Buscar...",
   meta,
 }: DataTableProps<TData, TValue>) {
@@ -146,6 +149,12 @@ export function DataTable<TData, TValue>({
             <Button variant="outline" size="sm" onClick={onExportCSV}>
               <Download className="mr-1.5 h-4 w-4" />
               CSV
+            </Button>
+          )}
+          {onExportExcel && (
+            <Button variant="outline" size="sm" onClick={onExportExcel}>
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+              Excel
             </Button>
           )}
           {onNewClick && (

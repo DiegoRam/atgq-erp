@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { AlertTriangle, ChevronDown, Download } from "lucide-react";
+import { AlertTriangle, ChevronDown, Download, FileSpreadsheet } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { exportToCSV } from "@/lib/format";
+import { exportToExcel } from "@/lib/export";
 import { getInventario } from "./actions";
 import type { InventarioRow } from "@/types/stock";
 
@@ -80,7 +81,14 @@ export default function InventarioPage() {
     fetchData();
   }, [fetchData]);
 
-  function handleExportCSV() {
+  const inventarioHeaders = [
+    { key: "deposito", label: "Depósito" },
+    { key: "item", label: "Ítem" },
+    { key: "unidad", label: "Unidad" },
+    { key: "cantidad", label: "Cantidad" },
+  ];
+
+  function getExportData() {
     const rows: Record<string, unknown>[] = [];
     for (const group of groups) {
       for (const row of group.items) {
@@ -92,12 +100,20 @@ export default function InventarioPage() {
         });
       }
     }
-    exportToCSV(rows, "inventario_stock", [
-      { key: "deposito", label: "Depósito" },
-      { key: "item", label: "Ítem" },
-      { key: "unidad", label: "Unidad" },
-      { key: "cantidad", label: "Cantidad" },
-    ]);
+    return rows;
+  }
+
+  function handleExportCSV() {
+    exportToCSV(getExportData(), "inventario_stock", inventarioHeaders);
+  }
+
+  function handleExportExcel() {
+    exportToExcel(
+      getExportData(),
+      "inventario_stock",
+      "Inventario",
+      inventarioHeaders,
+    );
   }
 
   return (
@@ -105,10 +121,16 @@ export default function InventarioPage() {
       <PageHeader
         title="Inventario"
         actions={
-          <Button variant="outline" size="sm" onClick={handleExportCSV}>
-            <Download className="mr-1.5 h-4 w-4" />
-            Exportar CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+              <Download className="mr-1.5 h-4 w-4" />
+              CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+              Excel
+            </Button>
+          </div>
         }
       />
 

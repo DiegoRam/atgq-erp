@@ -10,6 +10,28 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P8.1** — Dashboard Home con KPIs (`/`):
+  - 5 tarjetas KPI: Socios Activos, Cuotas Impagas (mes), Recaudación (mes), Ventas (mes), Stock Crítico
+  - Cada KPI es clickeable y navega a la página correspondiente
+  - Gráfico de barras: Recaudación Neta últimos 6 meses (Recharts BarChart)
+  - Server Component async con getDashboardData() que ejecuta 6 queries en paralelo
+  - Reemplaza la página placeholder anterior
+
+- **P8.2** — Exportación Excel (xlsx) en reportes principales:
+  - Paquete `xlsx` (SheetJS) instalado con dynamic import para tree-shaking
+  - Helper `exportToExcel()` en `src/lib/export.ts` con auto-ancho de columnas
+  - Prop `onExportExcel` agregado al componente DataTable (botón Excel junto a CSV)
+  - Botón "Excel" agregado a 7 páginas: Administración de Socios, Socios Morosos, Padrón, Movimientos de Fondos, Inventario, Ventas Realizadas, Reportes Mensual
+  - Exporta solo los registros filtrados/visibles actualmente
+
+- **P8.3** — Config SOCIOS (3 ABM pages):
+  - Categorías Sociales (`/socios/config/categorias`): DataTable con Nombre, Descripción, Monto Base (ARS), Estado + FormModal CRUD
+  - Tipo de Cuotas (`/socios/config/tipo-cuotas`): DataTable con Nombre, Descripción, Estado + FormModal CRUD
+  - Métodos de Cobranza (`/socios/config/cobranzas`): DataTable con Nombre, Estado + FormModal CRUD
+  - Validaciones: nombre unique (23505), no desactivar categorías con socios activos, no desactivar métodos en uso, no desactivar tipos con cuotas impagas
+  - Tipos: TipoCuota, CategoriaSocialFormData, TipoCuotaFormData, MetodoCobranzaFormData (src/types/socios.ts)
+  - Zod schemas: categoriaSocialSchema, tipoCuotaSchema, metodoCobranzaSchema (src/lib/schemas/socios-config.ts)
+
 - **P7.1** — ABM Actividades (`/actividades`):
   - DataTable: Nombre, Descripción, Monto Cuota (ARS), Inscriptos (count), Estado (badge), Acciones (editar + ver detalle)
   - ActividadForm: FormModal con Nombre, Descripción, Monto Cuota, Activa (switch)
