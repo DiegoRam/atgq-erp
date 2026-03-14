@@ -30,13 +30,26 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Do not run code between createServerClient and supabase.auth.getUser().
-  // A simple mistake could make it very hard to debug issues with users being
-  // randomly logged out.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // IMPORTANT: Use getUser() instead of getSession() — getUser() validates the
-  // auth token with the Supabase Auth server, while getSession() only reads the
-  // JWT locally without validation.
-  await supabase.auth.getUser();
+  // If no session and not on /login, redirect to /login
+  if (
+    !user &&
+    !request.nextUrl.pathname.startsWith("/login")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // If authenticated and on /login, redirect to /
+  if (user && request.nextUrl.pathname.startsWith("/login")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }

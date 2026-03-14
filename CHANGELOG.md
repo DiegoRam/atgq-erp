@@ -10,6 +10,14 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P2.1** — Autenticación con Supabase Auth:
+  - Página de login (`/login`) con formulario email + password usando shadcn/ui (Card, Input, Button, Label)
+  - Server Action para login (`signInWithPassword`) y logout (`signOut`) con redirect
+  - Middleware protege todas las rutas: redirige a `/login` sin sesión, redirige a `/` si ya autenticado
+  - Hook `useUser` para acceso al usuario actual desde componentes client
+  - Componentes shadcn/ui instalados: card, input, button, label
+  - NO incluye registro de usuarios (se hará en P9.1) ni recuperación de contraseña
+
 - **P1.4** — Seed data inicial (`supabase/seed.sql`):
   - 14 categorías sociales del sistema legacy (Activo, Cadete, Vitalicio, Adherente, Grupo Familiar, BAJA, etc.)
   - 6 métodos de cobranza (Efectivo, VISA Crédito/Débito, Mastercard, Transferencia, Débito Automático)
