@@ -19,7 +19,7 @@
 | 6 | VENTAS | ✅ Completado | 6/6 |
 | 7 | ACTIVIDADES + TURNOS | ✅ Completado | 5/5 |
 | 8 | Reportes avanzados | ✅ Completado | 3/3 |
-| 9 | Security / RBAC | ⬜ Pendiente | — |
+| 9 | Security / RBAC | ✅ Completado | 3/3 |
 
 **Leyenda:** ⬜ Pendiente · 🔄 En progreso · ✅ Completado
 
@@ -125,9 +125,9 @@
 
 | ID | Tarea | Estado | Fecha |
 |----|-------|--------|-------|
-| P9.1 | ABM usuarios del sistema (Supabase Admin API) | ⬜ | — |
-| P9.2 | ABM roles y permisos por módulo | ⬜ | — |
-| P9.3 | Supabase RLS policies en todas las tablas | ⬜ | — |
+| P9.1 | ABM usuarios del sistema (Supabase Admin API) | ✅ | 2026-03-14 |
+| P9.2 | ABM roles y permisos por módulo | ✅ | 2026-03-14 |
+| P9.3 | Supabase RLS policies en todas las tablas | ✅ | 2026-03-14 |
 
 ---
 

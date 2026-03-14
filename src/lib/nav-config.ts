@@ -7,6 +7,7 @@ export type NavSeparator = { separator: true };
 
 export type NavModule = {
   label: string;
+  modulo: string;
   items: (NavItem | NavSeparator)[];
 };
 
@@ -15,6 +16,7 @@ const sep: NavSeparator = { separator: true };
 export const NAV_MODULES: NavModule[] = [
   {
     label: "SOCIOS",
+    modulo: "socios",
     items: [
       { label: "Administración de Socios", href: "/socios" },
       { label: "Ver Grupos Familiares", href: "/socios/grupos-familiares" },
@@ -41,6 +43,7 @@ export const NAV_MODULES: NavModule[] = [
   },
   {
     label: "ACTIVIDADES",
+    modulo: "actividades",
     items: [
       { label: "Administración de Actividades", href: "/actividades" },
       {
@@ -52,10 +55,12 @@ export const NAV_MODULES: NavModule[] = [
   },
   {
     label: "TURNOS",
+    modulo: "turnos",
     items: [{ label: "Administrar Turnos", href: "/turnos" }],
   },
   {
     label: "VENTAS",
+    modulo: "ventas",
     items: [
       { label: "Nueva Venta", href: "/ventas/nueva" },
       { label: "Ventas Realizadas", href: "/ventas" },
@@ -74,6 +79,7 @@ export const NAV_MODULES: NavModule[] = [
   },
   {
     label: "STOCK",
+    modulo: "stock",
     items: [
       { label: "Inventario", href: "/stock" },
       { label: "Ingresos / Egresos", href: "/stock/movimientos/nuevo" },
@@ -85,6 +91,7 @@ export const NAV_MODULES: NavModule[] = [
   },
   {
     label: "TESORERÍA",
+    modulo: "tesoreria",
     items: [
       { label: "Cajas", href: "/tesoreria/cajas" },
       { label: "Ingresar Movimiento", href: "/tesoreria/movimientos/nuevo" },
@@ -118,6 +125,7 @@ export const NAV_MODULES: NavModule[] = [
   },
   {
     label: "Security",
+    modulo: "seguridad",
     items: [
       { label: "Usuarios", href: "/security/usuarios" },
       { label: "Roles y Permisos", href: "/security/roles" },

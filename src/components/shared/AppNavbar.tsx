@@ -11,6 +11,7 @@ import {
 import { NAV_MODULES, type NavModule } from "@/lib/nav-config";
 import { useTabsStore } from "@/store/tabsStore";
 import { useRouter } from "next/navigation";
+import type { UserPermissions } from "@/types/security";
 
 function NavDropdown({ module }: { module: NavModule }) {
   const openTab = useTabsStore((s) => s.openTab);
@@ -44,10 +45,21 @@ function NavDropdown({ module }: { module: NavModule }) {
   );
 }
 
-export function AppNavbar() {
+interface AppNavbarProps {
+  permissions?: UserPermissions[];
+}
+
+export function AppNavbar({ permissions }: AppNavbarProps) {
+  const visibleModules = permissions
+    ? NAV_MODULES.filter((m) => {
+        const perm = permissions.find((p) => p.modulo === m.modulo);
+        return perm?.puede_leer;
+      })
+    : NAV_MODULES;
+
   return (
     <nav className="flex items-center gap-1 bg-[#1e3a5f] px-2">
-      {NAV_MODULES.map((module) => (
+      {visibleModules.map((module) => (
         <NavDropdown key={module.label} module={module} />
       ))}
     </nav>

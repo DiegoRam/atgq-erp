@@ -10,6 +10,41 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P9.1** — ABM Usuarios del Sistema (`/security/usuarios`):
+  - Admin client (`src/lib/supabase/admin.ts`) using `SUPABASE_SERVICE_ROLE_KEY` for user management
+  - Permission helpers (`src/lib/permissions.ts`): `getUserPermissions()`, `isAdmin()`, `hasPermission()`
+  - Security types (`src/types/security.ts`): Role, PermisoModulo, UsuarioSistema, UserPermissions, MODULOS const
+  - Zod schemas (`src/lib/schemas/security.ts`): usuarioSchema, rolSchema
+  - DataTable: Email, Rol (Badge), Último acceso, Estado (Activo/Inactivo), Acciones (Editar rol, Ban/Unban)
+  - UsuarioForm: create user with email + password + rol, edit role assignment
+  - Security layout with `isAdmin()` guard + bootstrap mode (allows access when no roles assigned)
+  - Bootstrap migration: auto-assigns Administrador role to first auth user
+  - Navbar permission filtering: modules filtered by `puede_leer` permission
+  - Dashboard layout: loads user permissions server-side, shows "Sin rol asignado" message for users without roles
+
+- **P9.2** — ABM Roles y Permisos (`/security/roles`):
+  - DataTable: Nombre, Descripción, Usuarios (count), Acciones (Editar, Ver Permisos, Eliminar)
+  - RolForm: FormModal for create/edit role with nombre + descripcion
+  - Role detail page (`/security/roles/[id]`): PermisosMatrix component
+  - PermisosMatrix: 7×3 checkbox grid (modules × leer/escribir/eliminar) with cascade logic
+  - Cascade: Eliminar→auto-check Escribir+Leer; Escribir→auto-check Leer; uncheck Leer→uncheck all
+  - Protected roles: Administrador, Tesorero, Recepcionista, Solo Lectura cannot be deleted
+  - Custom roles can only be deleted if no users are assigned
+
+- **P9.3** — Supabase RLS Policies:
+  - SQL helper function `get_user_modulo_permission()` (SECURITY DEFINER, bypasses RLS for circular dependency)
+  - Performance index on `usuarios_roles(user_id)`
+  - Replaced 25 permissive `authenticated_all` policies with 100 granular RBAC policies (4 per table × 25 tables)
+  - Each table has SELECT (leer), INSERT (escribir), UPDATE (escribir), DELETE (eliminar) policies
+  - `stock_items` has dual-module SELECT (stock OR ventas) since it's shared between modules
+  - Admin operations via service role client bypass RLS as intended
+
+### Changed
+
+- `src/lib/nav-config.ts` — Added `modulo` field to `NavModule` type for permission filtering
+- `src/components/shared/AppNavbar.tsx` — Accepts `permissions` prop, filters modules by `puede_leer`
+- `src/app/(dashboard)/layout.tsx` — Server-side permission loading, "sin rol" message for unassigned users
+
 - **P8.1** — Dashboard Home con KPIs (`/`):
   - 5 tarjetas KPI: Socios Activos, Cuotas Impagas (mes), Recaudación (mes), Ventas (mes), Stock Crítico
   - Cada KPI es clickeable y navega a la página correspondiente
