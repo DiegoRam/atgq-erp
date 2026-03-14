@@ -17,7 +17,7 @@
 | 4 | TESORERÍA | ✅ Completado | 6/6 |
 | 5 | STOCK | ✅ Completado | 5/5 |
 | 6 | VENTAS | ✅ Completado | 6/6 |
-| 7 | ACTIVIDADES + TURNOS | ⬜ Pendiente | — |
+| 7 | ACTIVIDADES + TURNOS | ✅ Completado | 5/5 |
 | 8 | Reportes avanzados | ⬜ Pendiente | — |
 | 9 | Security / RBAC | ⬜ Pendiente | — |
 
@@ -103,11 +103,11 @@
 
 | ID | Tarea | Estado | Fecha |
 |----|-------|--------|-------|
-| P7.1 | ABM Actividades + detalle con inscriptos | ⬜ | — |
-| P7.2 | Inscripción/baja de socios en actividades | ⬜ | — |
-| P7.3 | Generar cuota masiva de actividades | ⬜ | — |
-| P7.4 | ABM Actividades Extras | ⬜ | — |
-| P7.5 | Gestión de Turnos (CRUD + validación solapamiento) | ⬜ | — |
+| P7.1 | ABM Actividades + detalle con inscriptos | ✅ | 2026-03-14 |
+| P7.2 | Inscripción/baja de socios en actividades | ✅ | 2026-03-14 |
+| P7.3 | Generar cuota masiva de actividades | ✅ | 2026-03-14 |
+| P7.4 | ABM Actividades Extras | ✅ | 2026-03-14 |
+| P7.5 | Gestión de Turnos (CRUD + validación solapamiento) | ✅ | 2026-03-14 |
 
 ---
 

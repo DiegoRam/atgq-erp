@@ -10,6 +10,40 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P7.1** — ABM Actividades (`/actividades`):
+  - DataTable: Nombre, Descripción, Monto Cuota (ARS), Inscriptos (count), Estado (badge), Acciones (editar + ver detalle)
+  - ActividadForm: FormModal con Nombre, Descripción, Monto Cuota, Activa (switch)
+  - Detalle actividad (`/actividades/[id]`): Card con info + tabla de inscriptos (Nro Socio, Apellido, Nombre, Fecha Inscripción)
+
+- **P7.2** — Inscripción/baja de socios en actividades:
+  - Desde detalle actividad: botón "Inscribir Socio" con autocomplete + AlertDialog "Dar de baja" por fila
+  - Desde perfil socio (`/socios/[id]/actividades`): lista actividades + inscribir en nueva (Select) + dar de baja
+  - Soft delete: `UPDATE socios_actividades SET activa = false`
+  - Manejo de unique constraint (error.code 23505)
+
+- **P7.3** — Generar Cuota de Actividades (`/actividades/generar-cuota`):
+  - Select actividad (solo activas con inscriptos > 0) → pre-llena monto desde actividad.monto_cuota
+  - Selector período (mes + año) + monto editable
+  - Vista previa: count de socios + monto total
+  - Bulk INSERT en cuotas con tipo_cuota='Cuota Actividad'
+  - Toast con resumen de generación
+
+- **P7.4** — ABM Actividades Extras (`/actividades/extras`):
+  - DataTable: Nombre, Descripción, Fecha, Monto, Acciones (editar)
+  - ActividadExtraForm: FormModal con Nombre, Descripción, Fecha (date), Monto
+
+- **P7.5** — Gestión de Turnos (`/turnos`):
+  - Tabla con filtros: Fecha, Instalación (Select), Estado (Todos/Confirmado/Cancelado)
+  - Columnas: Fecha, Hora Inicio, Hora Fin, Instalación, Socio (nro + nombre), Estado (badge), Acciones
+  - TurnoForm: FormModal con autocomplete de socio, Select instalación, fecha, hora inicio/fin
+  - Validación de solapamiento: no permite turnos que se superponen en misma instalación (strict inequalities for back-to-back)
+  - Cancelar turno: AlertDialog de confirmación, UPDATE estado='cancelado'
+
+- **Pre-requisitos Fase 7:**
+  - Tipos TypeScript: Actividad, ActividadFormData, SocioActividad, ActividadExtra, ActividadExtraFormData, Instalacion, Turno, TurnoFormData (src/types/actividades.ts)
+  - Zod schemas: actividadSchema, actividadExtraSchema, turnoSchema con refine hora_fin > hora_inicio (src/lib/schemas/actividades.ts)
+  - Seed: 5 actividades, 4 extras, 12 inscripciones, 8 turnos (mix confirmado/cancelado) Ene-Mar 2026
+
 - **P6.1** — Nueva Venta POS (`/ventas/nueva`):
   - Layout 2 columnas (8+4): picker de ítems + carrito | cliente + pago
   - Carrito local con useState: agregar, quitar, acumular cantidad
