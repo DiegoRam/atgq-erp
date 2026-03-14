@@ -98,6 +98,12 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
   - Componentes shadcn/ui instalados: card, input, button, label
   - NO incluye registro de usuarios (se hará en P9.1) ni recuperación de contraseña
 
+- **Seed: datos demo de socios** — 50 socios de demostración con cuotas y grupo familiar:
+  - 50 socios distribuidos en 8 categorías (Activo, Cadete, Vitalicio, Adherente, Grupo Familia, Grupo Fliar. Miembro, Inactivo, BAJA)
+  - 111 cuotas sociales (ene/feb/mar 2026) con variación pagadas/impagas para testear morosos
+  - 1 grupo familiar (titular + 3 miembros)
+  - Datos argentinos realistas: nombres, DNIs, localidades zona sur GBA, fechas variadas
+
 - **P1.4** — Seed data inicial (`supabase/seed.sql`):
   - 14 categorías sociales del sistema legacy (Activo, Cadete, Vitalicio, Adherente, Grupo Familiar, BAJA, etc.)
   - 6 métodos de cobranza (Efectivo, VISA Crédito/Débito, Mastercard, Transferencia, Débito Automático)
