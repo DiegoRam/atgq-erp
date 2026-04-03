@@ -37,3 +37,4 @@ tests/screenshots/
 .claude/
 **/CLAUDE.md
 !/CLAUDE.md
+tsconfig.tsbuildinfo
