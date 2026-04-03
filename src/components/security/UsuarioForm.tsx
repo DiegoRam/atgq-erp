@@ -15,8 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  usuarioSchema,
-  type UsuarioSchemaType,
+  usuarioCreateSchema,
+  usuarioEditSchema,
+  type UsuarioCreateSchemaType,
+  type UsuarioEditSchemaType,
 } from "@/lib/schemas/security";
 import {
   createUsuario,
@@ -42,54 +44,59 @@ export function UsuarioForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!usuario;
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<UsuarioSchemaType>({
-    resolver: zodResolver(usuarioSchema),
+  const createForm = useForm<UsuarioCreateSchemaType>({
+    resolver: zodResolver(usuarioCreateSchema),
+  });
+
+  const editForm = useForm<UsuarioEditSchemaType>({
+    resolver: zodResolver(usuarioEditSchema),
   });
 
   useEffect(() => {
     if (open && usuario) {
-      reset({ email: usuario.email, password: "", rol_id: usuario.rol_id ?? "" });
+      editForm.reset({ rol_id: usuario.rol_id ?? "" });
     } else if (open) {
-      reset({ email: "", password: "", rol_id: "" });
+      createForm.reset({ email: "", password: "", rol_id: "" });
     }
-  }, [open, usuario, reset]);
+  }, [open, usuario, createForm, editForm]);
 
-  async function onSubmit(data: UsuarioSchemaType) {
-    if (!isEditing && data.password.length < 8) {
-      toast.error("La contraseña debe tener al menos 8 caracteres");
-      return;
-    }
+  async function onCreateSubmit(data: UsuarioCreateSchemaType) {
     setIsSubmitting(true);
     try {
-      if (isEditing) {
-        await updateUsuarioRole(usuario.id, data.rol_id);
-        toast.success("Rol actualizado correctamente");
-      } else {
-        await createUsuario({
-          email: data.email,
-          password: data.password,
-          rol_id: data.rol_id,
-        });
-        toast.success("Usuario creado correctamente");
-      }
+      await createUsuario({
+        email: data.email,
+        password: data.password,
+        rol_id: data.rol_id,
+      });
+      toast.success("Usuario creado correctamente");
       onSaved();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Error al guardar el usuario",
+        err instanceof Error ? err.message : "Error al crear el usuario",
       );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  const rolValue = watch("rol_id");
+  async function onEditSubmit(data: UsuarioEditSchemaType) {
+    setIsSubmitting(true);
+    try {
+      await updateUsuarioRole(usuario!.id, data.rol_id);
+      toast.success("Rol actualizado correctamente");
+      onSaved();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Error al actualizar el rol",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  const rolValue = isEditing
+    ? editForm.watch("rol_id")
+    : createForm.watch("rol_id");
 
   return (
     <FormModal
@@ -101,7 +108,11 @@ export function UsuarioForm({
           ? `Editando rol de "${usuario?.email}"`
           : "Complete los datos del nuevo usuario"
       }
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={
+        isEditing
+          ? editForm.handleSubmit(onEditSubmit)
+          : createForm.handleSubmit(onCreateSubmit)
+      }
       isSubmitting={isSubmitting}
     >
       <div className="space-y-4">
@@ -109,9 +120,15 @@ export function UsuarioForm({
           <>
             <div className="space-y-1">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} />
-              {errors.email && (
-                <p className="text-xs text-red-500">{errors.email.message}</p>
+              <Input
+                id="email"
+                type="email"
+                {...createForm.register("email")}
+              />
+              {createForm.formState.errors.email && (
+                <p className="text-xs text-red-500">
+                  {createForm.formState.errors.email.message}
+                </p>
               )}
             </div>
 
@@ -120,11 +137,11 @@ export function UsuarioForm({
               <Input
                 id="password"
                 type="password"
-                {...register("password")}
+                {...createForm.register("password")}
               />
-              {errors.password && (
+              {createForm.formState.errors.password && (
                 <p className="text-xs text-red-500">
-                  {errors.password.message}
+                  {createForm.formState.errors.password.message}
                 </p>
               )}
             </div>
@@ -135,7 +152,11 @@ export function UsuarioForm({
           <Label htmlFor="rol_id">Rol</Label>
           <Select
             value={rolValue || ""}
-            onValueChange={(v) => setValue("rol_id", v)}
+            onValueChange={(v) =>
+              isEditing
+                ? editForm.setValue("rol_id", v)
+                : createForm.setValue("rol_id", v)
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar rol..." />
@@ -148,8 +169,14 @@ export function UsuarioForm({
               ))}
             </SelectContent>
           </Select>
-          {errors.rol_id && (
-            <p className="text-xs text-red-500">{errors.rol_id.message}</p>
+          {(isEditing
+            ? editForm.formState.errors.rol_id
+            : createForm.formState.errors.rol_id) && (
+            <p className="text-xs text-red-500">
+              {isEditing
+                ? editForm.formState.errors.rol_id?.message
+                : createForm.formState.errors.rol_id?.message}
+            </p>
           )}
         </div>
       </div>

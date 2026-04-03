@@ -17,7 +17,7 @@ export const MODULO_LABELS: Record<Modulo, string> = {
   ventas: "VENTAS",
   stock: "STOCK",
   tesoreria: "TESORERÍA",
-  seguridad: "Security",
+  seguridad: "SEGURIDAD",
 };
 
 export interface Role {

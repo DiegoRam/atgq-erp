@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import Image from "next/image";
 import { LogOut } from "lucide-react";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,22 @@ export async function AppHeader() {
 
   return (
     <header className="flex items-center justify-between bg-slate-800 px-4 py-2 text-white">
-      <div>
+      <div className="flex items-center gap-3">
+        <Image
+          src="/logo.png"
+          alt="ATGQ Logo"
+          width={32}
+          height={32}
+          className="rounded-full"
+        />
+        <div>
         <h1 className="text-sm font-bold leading-tight">
           Asociación de Tiro y Gimnasia de Quilmes
         </h1>
         <p className="text-xs text-slate-300">
           Sistema de Socios y Control Administrativo
         </p>
+        </div>
       </div>
       <div className="flex items-center gap-4">
         <div className="text-right text-sm">

@@ -1,5 +1,3 @@
-"use server";
-
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { UserPermissions } from "@/types/security";
 
@@ -7,27 +5,35 @@ export async function getUserPermissions(
   userId: string,
 ): Promise<UserPermissions[]> {
   const admin = createAdminClient();
-  const { data, error } = await admin
+
+  // Step 1: Get user's role(s)
+  const { data: userRoles, error: urError } = await admin
     .from("usuarios_roles")
-    .select("rol_id, roles!inner(id), permisos:permisos_modulo!inner(modulo, puede_leer, puede_escribir, puede_eliminar)")
+    .select("rol_id")
     .eq("user_id", userId);
 
-  if (error || !data || data.length === 0) return [];
+  if (urError || !userRoles || userRoles.length === 0) return [];
 
-  // Flatten permisos from all roles (user should have one role, but handle multiple)
+  const rolIds = userRoles.map((ur) => ur.rol_id);
+
+  // Step 2: Get permissions for those roles
+  const { data: permisos, error: pError } = await admin
+    .from("permisos_modulo")
+    .select("modulo, puede_leer, puede_escribir, puede_eliminar")
+    .in("rol_id", rolIds);
+
+  if (pError || !permisos) return [];
+
+  // Merge permissions (most permissive wins across multiple roles)
   const permissionsMap = new Map<string, UserPermissions>();
-  for (const ur of data) {
-    const permisos = (ur as unknown as { permisos: UserPermissions[] }).permisos;
-    for (const p of permisos) {
-      const existing = permissionsMap.get(p.modulo);
-      if (existing) {
-        // Merge: most permissive wins
-        existing.puede_leer = existing.puede_leer || p.puede_leer;
-        existing.puede_escribir = existing.puede_escribir || p.puede_escribir;
-        existing.puede_eliminar = existing.puede_eliminar || p.puede_eliminar;
-      } else {
-        permissionsMap.set(p.modulo, { ...p });
-      }
+  for (const p of permisos) {
+    const existing = permissionsMap.get(p.modulo);
+    if (existing) {
+      existing.puede_leer = existing.puede_leer || p.puede_leer;
+      existing.puede_escribir = existing.puede_escribir || p.puede_escribir;
+      existing.puede_eliminar = existing.puede_eliminar || p.puede_eliminar;
+    } else {
+      permissionsMap.set(p.modulo, { ...p });
     }
   }
 
@@ -54,7 +60,9 @@ export async function isAdmin(userId: string): Promise<boolean> {
 
   if (!data) return false;
   return data.some(
-    (ur) => (ur as unknown as { roles: { nombre: string } }).roles.nombre === "Administrador",
+    (ur) =>
+      (ur as unknown as { roles: { nombre: string } }).roles.nombre ===
+      "Administrador",
   );
 }
 

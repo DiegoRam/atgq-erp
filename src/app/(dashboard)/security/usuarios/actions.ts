@@ -78,6 +78,11 @@ export async function createUsuario(data: {
   rol_id: string;
 }) {
   await requireAdmin();
+
+  if (!data.email || !data.password || data.password.length < 8 || !data.rol_id) {
+    throw new Error("Datos inválidos");
+  }
+
   const admin = createAdminClient();
 
   const {
@@ -110,10 +115,13 @@ export async function createUsuario(data: {
 }
 
 export async function updateUsuarioRole(userId: string, rolId: string) {
-  await requireAdmin();
+  const currentUser = await requireAdmin();
+  if (userId === currentUser.id) {
+    throw new Error("No puede modificar su propio rol");
+  }
   const admin = createAdminClient();
 
-  // Upsert: delete existing then insert
+  // Delete existing and insert new in sequence
   await admin.from("usuarios_roles").delete().eq("user_id", userId);
 
   const { error } = await admin.from("usuarios_roles").insert({
@@ -126,7 +134,10 @@ export async function updateUsuarioRole(userId: string, rolId: string) {
 }
 
 export async function toggleUsuarioStatus(userId: string, ban: boolean) {
-  await requireAdmin();
+  const currentUser = await requireAdmin();
+  if (userId === currentUser.id) {
+    throw new Error("No puede desactivar su propia cuenta");
+  }
   const admin = createAdminClient();
 
   if (ban) {
@@ -145,6 +156,7 @@ export async function toggleUsuarioStatus(userId: string, ban: boolean) {
 }
 
 export async function getRoles() {
+  await requireAdmin();
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("roles")

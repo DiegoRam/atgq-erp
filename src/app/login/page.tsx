@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 import { login } from "./actions";
 
 export default function LoginPage() {
@@ -35,6 +36,14 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
+          <Image
+            src="/logo.png"
+            alt="ATGQ Logo"
+            width={80}
+            height={80}
+            className="mx-auto rounded-full"
+            priority
+          />
           <CardTitle className="text-2xl">ATGQ ERP</CardTitle>
           <CardDescription>
             Sistema de Socios y Control Administrativo

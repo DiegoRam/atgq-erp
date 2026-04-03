@@ -19,7 +19,7 @@ RETURNS boolean AS $$
     WHERE ur.user_id = auth.uid() AND pm.modulo = p_modulo
     LIMIT 1
   ), false);
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public;
 
 -- Step 2: Performance index
 CREATE INDEX IF NOT EXISTS idx_usuarios_roles_user_id ON usuarios_roles(user_id);
