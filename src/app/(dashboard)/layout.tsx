@@ -42,7 +42,7 @@ export default async function DashboardLayout({
       <AppHeader />
       <AppNavbar permissions={permissions} />
       <WorkspaceTabs />
-      <main className="flex-1 bg-muted/30 p-4">
+      <main className="flex-1 bg-muted/30 p-2 sm:p-4">
         {hasNoRole ? (
           <div className="flex items-center justify-center py-20">
             <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-6 text-center">

@@ -15,34 +15,35 @@ export async function AppHeader() {
   const today = format(new Date(), "dd/MM/yyyy", { locale: es });
 
   return (
-    <header className="flex items-center justify-between bg-slate-800 px-4 py-2 text-white">
-      <div className="flex items-center gap-3">
+    <header className="flex items-center justify-between bg-slate-800 px-3 py-2 text-white sm:px-4">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <Image
           src="/logo.png"
           alt="ATGQ Logo"
           width={32}
           height={32}
-          className="rounded-full"
+          className="h-7 w-7 shrink-0 rounded-full sm:h-8 sm:w-8"
         />
-        <div>
-        <h1 className="text-sm font-bold leading-tight">
-          Asociación de Tiro y Gimnasia de Quilmes
-        </h1>
-        <p className="text-xs text-slate-300">
-          Sistema de Socios y Control Administrativo
-        </p>
+        <div className="min-w-0">
+          <h1 className="truncate text-xs font-bold leading-tight sm:text-sm">
+            <span className="sm:hidden">ATGQ</span>
+            <span className="hidden sm:inline">Asociación de Tiro y Gimnasia de Quilmes</span>
+          </h1>
+          <p className="hidden text-xs text-slate-300 sm:block">
+            Sistema de Socios y Control Administrativo
+          </p>
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <div className="text-right text-sm">
-          <p>Usuario: {user?.email ?? "—"}</p>
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+        <div className="text-right text-xs sm:text-sm">
+          <p className="hidden sm:block">Usuario: {user?.email ?? "—"}</p>
           <p className="text-xs text-slate-300">{today}</p>
         </div>
         <form action={logout}>
           <Button
             variant="ghost"
             size="icon"
-            className="text-slate-300 hover:bg-slate-700 hover:text-white"
+            className="h-8 w-8 text-slate-300 hover:bg-slate-700 hover:text-white"
             title="Cerrar sesión"
           >
             <LogOut className="h-4 w-4" />

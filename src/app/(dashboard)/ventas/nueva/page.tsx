@@ -185,10 +185,10 @@ export default function NuevaVentaPage() {
     <div className="space-y-4">
       <PageHeader title="Nueva Venta" />
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left: Item picker + Cart */}
-        <div className="col-span-8 space-y-4">
-          <div className="flex items-end gap-3 rounded-md border bg-muted/30 p-4">
+        <div className="space-y-4 lg:col-span-8">
+          <div className="flex flex-col gap-3 rounded-md border bg-muted/30 p-4 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
               <Label className="text-xs">Ítem</Label>
               <Select value={selectedItemId} onValueChange={setSelectedItemId}>
@@ -227,7 +227,7 @@ export default function NuevaVentaPage() {
         </div>
 
         {/* Right: Client + Payment */}
-        <div className="col-span-4 space-y-4">
+        <div className="space-y-4 lg:col-span-4">
           <div className="rounded-md border p-4 space-y-4">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Tipo de cliente</Label>

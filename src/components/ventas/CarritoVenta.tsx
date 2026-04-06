@@ -23,7 +23,7 @@ export function CarritoVenta({ items, onRemove }: CarritoVentaProps) {
   const total = items.reduce((sum, item) => sum + item.subtotal, 0);
 
   return (
-    <div className="rounded-md border">
+    <div className="overflow-x-auto rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>

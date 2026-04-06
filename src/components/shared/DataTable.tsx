@@ -105,9 +105,9 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-2">
       {/* Toolbar */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         {onSearch && (
-          <div className="relative max-w-xs flex-1">
+          <div className="relative flex-1 sm:max-w-xs">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={searchPlaceholder}
@@ -120,12 +120,12 @@ export function DataTable<TData, TValue>({
             />
           </div>
         )}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Columns3 className="mr-1.5 h-4 w-4" />
-                Columnas
+                <span className="hidden sm:inline">Columnas</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -148,13 +148,13 @@ export function DataTable<TData, TValue>({
           {onExportCSV && (
             <Button variant="outline" size="sm" onClick={onExportCSV}>
               <Download className="mr-1.5 h-4 w-4" />
-              CSV
+              <span className="hidden sm:inline">CSV</span>
             </Button>
           )}
           {onExportExcel && (
             <Button variant="outline" size="sm" onClick={onExportExcel}>
               <FileSpreadsheet className="mr-1.5 h-4 w-4" />
-              Excel
+              <span className="hidden sm:inline">Excel</span>
             </Button>
           )}
           {onNewClick && (
@@ -167,7 +167,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -240,7 +240,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground sm:flex-row sm:justify-between">
         <span>
           {from}–{to} de {totalCount}
         </span>
@@ -253,8 +253,8 @@ export function DataTable<TData, TValue>({
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span>
-            Página {page} de {totalPages}
+          <span className="text-xs sm:text-sm">
+            Pág. {page}/{totalPages}
           </span>
           <Button
             variant="outline"

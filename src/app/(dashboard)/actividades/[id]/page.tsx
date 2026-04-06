@@ -119,7 +119,7 @@ export default function ActividadDetallePage() {
         <Button onClick={() => setInscribirOpen(true)}>Inscribir Socio</Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

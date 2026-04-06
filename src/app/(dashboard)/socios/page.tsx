@@ -11,6 +11,9 @@ import { formatDate, formatAntiguedad, exportToCSV } from "@/lib/format";
 import { exportToExcel } from "@/lib/export";
 import type { Socio, CategoriaCount, SociosSearchParams } from "@/types/socios";
 import { SocioForm } from "@/components/socios/SocioForm";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Filter } from "lucide-react";
 
 const PAGE_SIZE = 50;
 
@@ -186,8 +189,43 @@ export default function SociosPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Administración de Socios" />
+      {/* Mobile filter button */}
+      <div className="md:hidden">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Filter className="mr-1.5 h-4 w-4" />
+              Filtros
+              {selectedCategorias.length > 0 && (
+                <span className="ml-1.5 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+                  {selectedCategorias.length}
+                </span>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-72 p-4">
+            <SheetHeader>
+              <SheetTitle className="text-left">Filtros</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              <FacetFilter
+                title="Categoría"
+                options={categoryCounts.map((c) => ({
+                  value: c.categoria_id,
+                  label: c.nombre,
+                  count: Number(c.count),
+                }))}
+                selected={selectedCategorias}
+                onSelect={setSelectedCategorias}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
       <div className="flex gap-4">
-        <div className="w-60 shrink-0">
+        {/* Desktop sidebar filter */}
+        <div className="hidden w-60 shrink-0 md:block">
           <FacetFilter
             title="Categoría"
             options={categoryCounts.map((c) => ({

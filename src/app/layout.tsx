@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { cn } from '@/lib/utils'
 import './globals.css'
@@ -17,6 +17,12 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: 'ATGQ ERP',
   description: 'Sistema de gestión — Asociación de Tiro y Gimnasia de Quilmes',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({
