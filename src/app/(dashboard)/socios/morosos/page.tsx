@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getSociosMorosos, getAllMorosos } from "./actions";
+import { getAllMorosos } from "./actions";
 import { formatDate, formatCurrency, exportToCSV } from "@/lib/format";
 import { exportToExcel } from "@/lib/export";
 import type { SocioMoroso } from "@/types/socios";
@@ -42,25 +42,39 @@ const columns: ColumnDef<SocioMoroso>[] = [
 ];
 
 export default function MorososPage() {
-  const [data, setData] = useState<SocioMoroso[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
+  const [allData, setAllData] = useState<SocioMoroso[]>([]);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const result = await getSociosMorosos(page, PAGE_SIZE);
-      setData(result.data);
-      setTotalCount(result.count);
+      const all = await getAllMorosos();
+      setAllData(all);
     } finally {
       setIsLoading(false);
     }
-  }, [page]);
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return allData;
+    return allData.filter((s) =>
+      [s.apellido, s.nombre, s.dni, String(s.nro_socio), s.categoria].some(
+        (v) => v?.toLowerCase().includes(q),
+      ),
+    );
+  }, [allData, search]);
+
+  const pageData = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  );
 
   const morososHeaders = [
     { key: "nro_socio", label: "Nro Socio" },
@@ -73,19 +87,17 @@ export default function MorososPage() {
     { key: "ultima_cuota_pagada", label: "Última Cuota Pagada" },
   ];
 
-  async function handleExportCSV() {
-    const all = await getAllMorosos();
+  function handleExportCSV() {
     exportToCSV(
-      all as unknown as Record<string, unknown>[],
+      filtered as unknown as Record<string, unknown>[],
       "socios_morosos",
       morososHeaders,
     );
   }
 
-  async function handleExportExcel() {
-    const all = await getAllMorosos();
+  function handleExportExcel() {
     exportToExcel(
-      all as unknown as Record<string, unknown>[],
+      filtered as unknown as Record<string, unknown>[],
       "socios_morosos",
       "Morosos",
       morososHeaders,
@@ -97,11 +109,16 @@ export default function MorososPage() {
       <PageHeader title="Socios Morosos" />
       <DataTable
         columns={columns}
-        data={data}
-        totalCount={totalCount}
+        data={pageData}
+        totalCount={filtered.length}
         page={page}
         pageSize={PAGE_SIZE}
         onPageChange={setPage}
+        onSearch={(q) => {
+          setSearch(q);
+          setPage(1);
+        }}
+        searchPlaceholder="Buscar por nro, apellido, nombre, DNI o categoría..."
         isLoading={isLoading}
         onExportCSV={handleExportCSV}
         onExportExcel={handleExportExcel}

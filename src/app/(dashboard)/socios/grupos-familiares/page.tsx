@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, Fragment } from "react";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Trash2, UserPlus } from "lucide-react";
+import { ChevronDown, ChevronRight, Trash2, UserPlus, Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -26,6 +27,21 @@ export default function GruposFamiliaresPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return grupos;
+    return grupos.filter((g) =>
+      g.titular
+        ? [
+            g.titular.apellido,
+            g.titular.nombre,
+            String(g.titular.nro_socio),
+          ].some((v) => v?.toLowerCase().includes(q))
+        : false,
+    );
+  }, [grupos, search]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -72,6 +88,16 @@ export default function GruposFamiliaresPage() {
         }
       />
 
+      <div className="relative sm:max-w-xs">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por titular (apellido, nombre o nro)..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-8"
+        />
+      </div>
+
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
@@ -93,19 +119,18 @@ export default function GruposFamiliaresPage() {
                   ))}
                 </TableRow>
               ))
-            ) : grupos.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No hay grupos familiares registrados.
                 </TableCell>
               </TableRow>
             ) : (
-              grupos.map((g, idx) => {
+              filtered.map((g, idx) => {
                 const isExpanded = expandedIds.has(g.id);
                 return (
-                  <>
+                  <Fragment key={g.id}>
                     <TableRow
-                      key={g.id}
                       className="cursor-pointer"
                       onClick={() => toggleExpand(g.id)}
                     >
@@ -125,7 +150,7 @@ export default function GruposFamiliaresPage() {
                       <TableCell>{g.miembros?.length ?? 0}</TableCell>
                     </TableRow>
                     {isExpanded && g.miembros && g.miembros.length > 0 && (
-                      <TableRow key={`${g.id}-members`}>
+                      <TableRow>
                         <TableCell />
                         <TableCell colSpan={3}>
                           <div className="space-y-1 py-2">
@@ -154,7 +179,7 @@ export default function GruposFamiliaresPage() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             )}

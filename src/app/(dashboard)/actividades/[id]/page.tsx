@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -40,6 +42,19 @@ export default function ActividadDetallePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [inscribirOpen, setInscribirOpen] = useState(false);
   const [bajaId, setBajaId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return inscriptos;
+    return inscriptos.filter((sa) =>
+      [
+        sa.socio?.apellido,
+        sa.socio?.nombre,
+        String(sa.socio?.nro_socio ?? ""),
+      ].some((v) => v?.toLowerCase().includes(q)),
+    );
+  }, [inscriptos, search]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -119,6 +134,16 @@ export default function ActividadDetallePage() {
         <Button onClick={() => setInscribirOpen(true)}>Inscribir Socio</Button>
       </div>
 
+      <div className="relative sm:max-w-xs">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nro, apellido o nombre..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-8"
+        />
+      </div>
+
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
@@ -141,14 +166,14 @@ export default function ActividadDetallePage() {
                   ))}
                 </TableRow>
               ))
-            ) : inscriptos.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center">
                   Sin inscriptos en esta actividad.
                 </TableCell>
               </TableRow>
             ) : (
-              inscriptos.map((sa) => (
+              filtered.map((sa) => (
                 <TableRow key={sa.id}>
                   <TableCell>{sa.socio?.nro_socio ?? "—"}</TableCell>
                   <TableCell>{sa.socio?.apellido ?? "—"}</TableCell>

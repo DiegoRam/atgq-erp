@@ -10,6 +10,13 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **Buscadores en todas las secciones con tablas/listas** — toda sección con tabla o lista ahora ofrece buscador o filtro por identificador y descripción (según corresponda):
+  - Listas ABM/config (búsqueda cliente por nombre/descripción vía `DataTable onSearch` + `useMemo`): `socios/config/{categorias,tipo-cuotas,cobranzas}`, `actividades`, `actividades/extras`, `ventas/items`, `stock/{items,depositos}`, `tesoreria/cajas`, `tesoreria/config/categorias`, `security/roles` (nombre/descripción), `security/usuarios` (email/rol)
+  - Tablas planas / agrupadas (buscador `Input` dedicado): `socios/grupos-familiares` (por titular), `socios/padron` (texto, junto al filtro de categoría existente), `stock` inventario (por ítem/unidad/depósito), `actividades/[id]` inscriptos (nro/apellido/nombre), `socios/[id]/cuotas` (período/tipo/método/estado), `socios/[id]/actividades` (actividad)
+  - `socios/morosos`: migrado de paginación server a carga completa (`getAllMorosos`) con búsqueda y paginación en cliente (nro/apellido/nombre/DNI/categoría); export ahora respeta el filtro
+  - Secciones ya provistas de búsqueda/filtros no modificadas: `socios`, `ventas`, `ventas/clientes`, `turnos`, `stock/movimientos`, `tesoreria/movimientos` y los reportes (filtros de fecha/categoría)
+  - Fix incidental: `socios/grupos-familiares` — `key` de React movido al `Fragment` del `.map` (antes en los `TableRow` internos)
+
 - **P9.1** — ABM Usuarios del Sistema (`/security/usuarios`):
   - Admin client (`src/lib/supabase/admin.ts`) using `SUPABASE_SERVICE_ROLE_KEY` for user management
   - Permission helpers (`src/lib/permissions.ts`): `getUserPermissions()`, `isAdmin()`, `hasPermission()`

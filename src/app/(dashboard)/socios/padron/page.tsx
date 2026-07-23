@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, FileSpreadsheet, Printer } from "lucide-react";
+import { Download, FileSpreadsheet, Printer, Search } from "lucide-react";
 import { getPadron } from "./actions";
 import { getCategorias } from "../actions";
 import { formatDate, exportToCSV } from "@/lib/format";
@@ -30,7 +31,18 @@ export default function PadronPage() {
   const [socios, setSocios] = useState<Socio[]>([]);
   const [categorias, setCategorias] = useState<CategoriaSocial[]>([]);
   const [selectedCategoria, setSelectedCategoria] = useState<string>("all");
+  const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return socios;
+    return socios.filter((s) =>
+      [s.apellido, s.nombre, s.dni, String(s.nro_socio), s.localidad].some(
+        (v) => v?.toLowerCase().includes(q),
+      ),
+    );
+  }, [socios, search]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -63,7 +75,7 @@ export default function PadronPage() {
 
   function handleExportCSV() {
     exportToCSV(
-      socios as unknown as Record<string, unknown>[],
+      filtered as unknown as Record<string, unknown>[],
       "padron_socios",
       padronHeaders,
     );
@@ -71,7 +83,7 @@ export default function PadronPage() {
 
   function handleExportExcel() {
     exportToExcel(
-      socios as unknown as Record<string, unknown>[],
+      filtered as unknown as Record<string, unknown>[],
       "padron_socios",
       "Padrón",
       padronHeaders,
@@ -120,6 +132,16 @@ export default function PadronPage() {
         }
       />
 
+      <div className="relative sm:max-w-xs print:hidden">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nro, apellido, nombre, DNI o localidad..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-8"
+        />
+      </div>
+
       <div className="rounded-md border print:border-none">
         <Table>
           <TableHeader>
@@ -144,14 +166,14 @@ export default function PadronPage() {
                   ))}
                 </TableRow>
               ))
-            ) : socios.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
                   Sin resultados.
                 </TableCell>
               </TableRow>
             ) : (
-              socios.map((s) => (
+              filtered.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.nro_socio}</TableCell>
                   <TableCell>{s.apellido}</TableCell>
@@ -168,7 +190,7 @@ export default function PadronPage() {
       </div>
 
       <p className="text-sm text-muted-foreground print:hidden">
-        Total: {socios.length} socios
+        Total: {filtered.length} socios
       </p>
 
       <style jsx global>{`

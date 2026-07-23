@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -107,16 +107,29 @@ export default function ItemsVentasPage() {
     fetchData();
   }
 
+  const [search, setSearch] = useState("");
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return data;
+    return data.filter((i) =>
+      [i.nombre, i.descripcion, i.stock_item?.nombre].some((v) =>
+        v?.toLowerCase().includes(q),
+      ),
+    );
+  }, [data, search]);
+
   return (
     <div className="space-y-4">
       <PageHeader title="Ítems de Ventas" />
       <DataTable
         columns={columns}
-        data={data}
-        totalCount={data.length}
+        data={filtered}
+        totalCount={filtered.length}
         page={1}
-        pageSize={data.length || 50}
+        pageSize={filtered.length || 50}
         onPageChange={() => {}}
+        onSearch={setSearch}
+        searchPlaceholder="Buscar por nombre, descripción o stock..."
         isLoading={isLoading}
         onNewClick={handleNew}
         newButtonLabel="Nuevo Ítem"

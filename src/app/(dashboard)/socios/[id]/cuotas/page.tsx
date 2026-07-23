@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -26,6 +28,21 @@ export default function SocioCuotasPage() {
   const [socio, setSocio] = useState<{ nro_socio: number; apellido: string; nombre: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCuota, setSelectedCuota] = useState<Cuota | null>(null);
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return cuotas;
+    return cuotas.filter((c) =>
+      [
+        c.periodo,
+        formatDate(c.periodo),
+        c.tipo_cuota?.nombre,
+        c.metodo_pago?.nombre,
+        c.pagada ? "pagada" : "impaga",
+      ].some((v) => v?.toLowerCase().includes(q)),
+    );
+  }, [cuotas, search]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -55,6 +72,16 @@ export default function SocioCuotasPage() {
         }
       />
 
+      <div className="relative sm:max-w-xs">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por período, tipo, método o estado..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-8"
+        />
+      </div>
+
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
@@ -79,14 +106,14 @@ export default function SocioCuotasPage() {
                   ))}
                 </TableRow>
               ))
-            ) : cuotas.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
                   Sin cuotas registradas.
                 </TableCell>
               </TableRow>
             ) : (
-              cuotas.map((c) => (
+              filtered.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>{formatDate(c.periodo)}</TableCell>
                   <TableCell>{c.tipo_cuota?.nombre ?? "—"}</TableCell>

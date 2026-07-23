@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { AlertTriangle, ChevronDown, Download, FileSpreadsheet } from "lucide-react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  Download,
+  FileSpreadsheet,
+  Search,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Collapsible,
   CollapsibleContent,
@@ -32,6 +39,23 @@ export default function InventarioPage() {
   const [groups, setGroups] = useState<DepositoGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasNegative, setHasNegative] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredGroups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return groups;
+    return groups
+      .map((group) => {
+        if (group.deposito_nombre.toLowerCase().includes(q)) return group;
+        const items = group.items.filter((row) =>
+          [row.item?.nombre, row.item?.unidad].some((v) =>
+            v?.toLowerCase().includes(q),
+          ),
+        );
+        return { ...group, items };
+      })
+      .filter((group) => group.items.length > 0);
+  }, [groups, search]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -90,7 +114,7 @@ export default function InventarioPage() {
 
   function getExportData() {
     const rows: Record<string, unknown>[] = [];
-    for (const group of groups) {
+    for (const group of filteredGroups) {
       for (const row of group.items) {
         rows.push({
           deposito: group.deposito_nombre,
@@ -143,17 +167,27 @@ export default function InventarioPage() {
         </div>
       )}
 
+      <div className="relative sm:max-w-xs">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por ítem, unidad o depósito..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-8"
+        />
+      </div>
+
       {isLoading ? (
         <div className="py-8 text-center text-muted-foreground">
           Cargando inventario...
         </div>
-      ) : groups.length === 0 ? (
+      ) : filteredGroups.length === 0 ? (
         <div className="py-8 text-center text-muted-foreground">
           No hay datos de inventario
         </div>
       ) : (
         <div className="space-y-3">
-          {groups.map((group) => (
+          {filteredGroups.map((group) => (
             <Collapsible key={group.deposito_id} defaultOpen>
               <CollapsibleTrigger asChild>
                 <button className="flex w-full items-center justify-between rounded-md bg-blue-50 px-4 py-2.5 text-left font-medium text-blue-900 hover:bg-blue-100">
