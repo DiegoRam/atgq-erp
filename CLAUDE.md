@@ -8,7 +8,7 @@ ATGQ-ERP is an ERP system for the **Asociación de Tiro y Gimnasia de Quilmes** 
 
 **Project status: fully implemented.** All 9 phases / 33 tasks (P1.1–P9.3) in `plan/PROMPT_PLAN.md` are complete (see `PROGRESS.md`). CHANGELOG entries are still grouped under `[Unreleased]` (version 0.1.0). The `docs/screenshots/` directory holds reference screenshots of the legacy system.
 
-The app is deployed on **Vercel** (frontend) with **Supabase Cloud** (Postgres + Auth). Supabase project refs: main `gcnytasaepgsfqvdyrth`, develop `cosadbrfepoyoxmwwoht`.
+The app is deployed on **Vercel** (frontend) with **Supabase Cloud** (Postgres + Auth). Active/linked Supabase project ref: `qtlfabajjvhyluqkvike` (`atygq_erp`, us-east-1) — this replaced the earlier database that was deleted. Legacy refs (no longer used): main `gcnytasaepgsfqvdyrth`, develop `cosadbrfepoyoxmwwoht`.
 
 ## Tech Stack
 
@@ -26,8 +26,10 @@ npm run dev            # next dev
 npm run build          # next build (verify this passes before completing a task)
 npm run lint           # next lint
 npm run format         # prettier --write .
-npx supabase db push --project-ref <ref>   # apply migrations (run from repo root)
+supabase db push       # apply migrations to linked project (run from repo root)
 ```
+
+**Supabase CLI**: use the globally-installed `supabase` binary (`/usr/local/bin/supabase`) directly — **never `npx supabase`** (avoids a per-run download and uses the pinned global version). The CLI is already linked to the active project (ref stored in `supabase/.temp/project-ref`), so `db push` / `db pull` need no `--project-ref` flag.
 
 Never run `supabase db reset` — apply migrations to preserve auth users.
 
@@ -44,6 +46,23 @@ Never run `supabase db reset` — apply migrations to preserve auth users.
 ## Database
 
 Schema lives in `supabase/migrations/` (25 tables across the 7 modules). Key migrations: `…000001_initial_schema` (all tables + RLS enabled), `…000003_socios_helpers` (report RPCs `get_socios_*`), `…000009_rbac_rls_policies` (per-operation RBAC policies replacing the earlier permissive ones), plus per-module seed migrations and admin bootstrap (`…000008`, `20260403000001_seed_admin_role`). SOCIOS reports use Postgres RPCs; most other reports aggregate in application code.
+
+### Recrear una base desde cero (seed reproducible)
+
+Datos de prueba en **tres archivos, en este orden** (declarado en `config.toml [db.seed] sql_paths`):
+1. `supabase/seeds/dev_user.sql` — crea el usuario Auth `diego@diegoram.me` / `12345678` (vía `crypt()`, email confirmado) y le asigna rol Administrador. **Debe correr primero**: `seed.sql` inserta `movimientos_fondos` que requieren un usuario en `auth.users`.
+2. `supabase/seed.sql` — seed core: 14 categorías sociales, métodos/tipos de cuota, 4 roles + permisos, 50 socios, grupos, ~111 cuotas, cajas, categorías e ~27 movimientos de tesorería, instalaciones. Auto-suficiente e idempotente (`ON CONFLICT DO NOTHING`).
+3. `supabase/seeds/demo_bonus.sql` — datos demo de ventas/stock/turnos. Agrega **socios puente 1001–1005** (los seeds de módulo `…04–07` los buscan por `nro_socio` pero `seed.sql` numera 1–50) y corre los bloques `DO` de movimientos de stock, ventas e inscripciones/turnos, con guards de idempotencia.
+
+**Aplicar a un proyecto remoto nuevo** (el CLI no tiene `db execute`; los `[db.seed]` solo corren en `db reset` local, que no usamos):
+```bash
+supabase db push                       # esquema + RLS + seeds estáticos de módulo
+# luego correr los 3 seeds en orden contra el remoto, p.ej. con psql:
+psql "$DATABASE_URL" -f supabase/seeds/dev_user.sql
+psql "$DATABASE_URL" -f supabase/seed.sql
+psql "$DATABASE_URL" -f supabase/seeds/demo_bonus.sql
+```
+Si no hay `psql`/DB password a mano, envolver cada archivo como una migración temporal `supabase/migrations/<ts>_*.sql`, hacer `supabase db push`, y luego limpiar el ledger con `supabase migration repair --status reverted <ts>` (no borra datos, solo el registro). Así se sembró `qtlfabajjvhyluqkvike` el 2026-07-23.
 
 ## Conventions
 
