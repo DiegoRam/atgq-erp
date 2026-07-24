@@ -39,3 +39,6 @@ tests/screenshots/
 !/CLAUDE.md
 tsconfig.tsbuildinfo
 .vercel
+
+# Backup legacy (245MB, datos personales de socios) — nunca commitear
+docs/backup.sql
