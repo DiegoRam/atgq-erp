@@ -33,6 +33,17 @@ supabase db push       # apply migrations to linked project (run from repo root)
 
 Never run `supabase db reset` — apply migrations to preserve auth users.
 
+## Verifying a change
+
+A task is not done when it compiles. Run these in order, and report what actually happened (including failures):
+
+1. **`npm run build`** and **`npm run lint`** must pass clean.
+2. **SQL against a real database.** Migrations and RPCs must be applied and exercised, never just eyeballed — plpgsql bodies hide errors that only surface at runtime. A local Supabase stack (`supabase_db_atgq-erp`, port `54322`) is the sandbox; reach it with the `libpq` psql at `/usr/local/opt/libpq/bin/psql` using `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Simulate a user with `set local role authenticated; set local request.jwt.claims = '{"sub":"<uuid>","role":"authenticated"}';` to test `auth.uid()` and RLS. Verify invariants (totals, balances), error paths, and that failures roll back leaving no rows. **Restore the local DB to its prior state afterwards** — it is the developer's working sandbox, not a scratch DB.
+3. **Code review** — run the `code-review` skill on the diff before touching the browser.
+4. **`agent-browser`** — verify the UI end to end for any Tier 2+ change (multi-file, business logic, or a new feature): walk the real screens, exercise the new flows, and confirm the data actually changed. Save screenshots to `tests/screenshots/`. Type-correct code that renders a broken screen is still a broken change; the browser pass is what catches it.
+
+Do not start a dev server just to test. If one is already running, use it; if the app is unreachable, say so and stop rather than launching one.
+
 ## Architecture
 
 - **Route-colocated server actions.** Every route folder under `src/app/(dashboard)/<module>/` has `page.tsx` + `actions.ts` (`"use server"`). There are no API routes; data access lives in server actions. Pages are mostly `"use client"` and call actions as RPCs (useState/useEffect/useCallback); the dashboard home and layouts are RSC exceptions.
