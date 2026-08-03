@@ -33,7 +33,12 @@ import { ChevronDown, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate, formatCurrency, exportToCSV } from "@/lib/format";
 import { exportToExcel } from "@/lib/export";
-import { getVentas, getVentaDetalle, anularVenta } from "./actions";
+import {
+  getVentas,
+  getVentaDetalle,
+  anularVenta,
+  getPuntosVentaParaFiltro,
+} from "./actions";
 import type { Venta, VentaItem, VentasSearchParams } from "@/types/ventas";
 
 const PAGE_SIZE = 50;
@@ -62,6 +67,12 @@ const columns: ColumnDef<Venta>[] = [
         {row.original.id.slice(0, 8).toUpperCase()}
       </span>
     ),
+  },
+  {
+    id: "punto_venta",
+    header: "Punto de Venta",
+    cell: ({ row }) => row.original.punto_venta?.nombre ?? "—",
+    enableSorting: false,
   },
   {
     id: "cliente",
@@ -148,6 +159,10 @@ export default function VentasRealizadasPage() {
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [estado, setEstado] = useState("");
+  const [puntoVentaId, setPuntoVentaId] = useState("");
+  const [puntosVenta, setPuntosVenta] = useState<
+    { id: string; nombre: string }[]
+  >([]);
 
   // Expand / Anular
   const [expandedVenta, setExpandedVenta] = useState<string | null>(null);
@@ -163,6 +178,8 @@ export default function VentasRealizadasPage() {
         fecha_desde: fechaDesde || undefined,
         fecha_hasta: fechaHasta || undefined,
         estado: estado || undefined,
+        punto_venta_id:
+          puntoVentaId && puntoVentaId !== "all" ? puntoVentaId : undefined,
       };
       const result = await getVentas(params);
       setData(result.data);
@@ -170,15 +187,21 @@ export default function VentasRealizadasPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, fechaDesde, fechaHasta, estado]);
+  }, [page, fechaDesde, fechaHasta, estado, puntoVentaId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   useEffect(() => {
+    getPuntosVentaParaFiltro()
+      .then(setPuntosVenta)
+      .catch(() => setPuntosVenta([]));
+  }, []);
+
+  useEffect(() => {
     setPage(1);
-  }, [fechaDesde, fechaHasta, estado]);
+  }, [fechaDesde, fechaHasta, estado, puntoVentaId]);
 
   async function handleExpand(venta: Venta) {
     if (expandedVenta === venta.id) {
@@ -194,6 +217,7 @@ export default function VentasRealizadasPage() {
   const ventasHeaders = [
     { key: "fecha", label: "Fecha" },
     { key: "nro_venta", label: "Nro Venta" },
+    { key: "punto_venta", label: "Punto de Venta" },
     { key: "cliente", label: "Cliente / Socio" },
     { key: "total", label: "Total" },
     { key: "metodo_pago", label: "Método Pago" },
@@ -204,6 +228,7 @@ export default function VentasRealizadasPage() {
     return data.map((v) => ({
       fecha: formatDate(v.fecha),
       nro_venta: v.id.slice(0, 8).toUpperCase(),
+      punto_venta: v.punto_venta?.nombre ?? "",
       cliente: clienteNombre(v),
       total: v.total,
       metodo_pago: v.metodo_pago?.nombre ?? "",
@@ -227,8 +252,16 @@ export default function VentasRealizadasPage() {
   async function handleConfirmAnular() {
     if (!anularTarget) return;
     try {
-      await anularVenta(anularTarget.id);
-      toast.success("Venta anulada correctamente");
+      const result = await anularVenta(anularTarget.id);
+      toast.success(
+        result.items_restituidos > 0
+          ? `Venta anulada. Se restituyeron ${result.items_restituidos} ítem(s) al stock${
+              result.movimiento_fondo_id
+                ? " y se registró el egreso compensatorio en caja"
+                : ""
+            }.`
+          : "Venta anulada correctamente",
+      );
       setAnularTarget(null);
       fetchData();
     } catch (err) {
@@ -260,6 +293,22 @@ export default function VentasRealizadasPage() {
             value={fechaHasta}
             onChange={(e) => setFechaHasta(e.target.value)}
           />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Punto de Venta</Label>
+          <Select value={puntoVentaId} onValueChange={setPuntoVentaId}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {puntosVenta.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Estado</Label>
@@ -332,8 +381,9 @@ export default function VentasRealizadasPage() {
             <AlertDialogTitle>Anular Venta</AlertDialogTitle>
             <AlertDialogDescription>
               ¿Está seguro de que desea anular esta venta por{" "}
-              {formatCurrency(Number(anularTarget?.total ?? 0))}? Esta acción
-              no se puede deshacer.
+              {formatCurrency(Number(anularTarget?.total ?? 0))}? Se restituirá
+              el stock en el punto de venta y se compensará el ingreso en caja.
+              Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

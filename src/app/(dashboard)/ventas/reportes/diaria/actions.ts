@@ -11,6 +11,7 @@ interface VentaDiariaRow {
 export async function getVentasDiarias(
   anio: number,
   mes: number,
+  puntoVentaId?: string,
 ): Promise<VentaDiariaRow[]> {
   const supabase = createClient();
 
@@ -19,13 +20,16 @@ export async function getVentasDiarias(
   const lastDay = new Date(anio, mes, 0).getDate();
   const hasta = `${anio}-${mesStr}-${lastDay}T23:59:59`;
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("ventas")
     .select("fecha, total")
     .eq("anulada", false)
     .gte("fecha", desde)
     .lte("fecha", hasta);
 
+  if (puntoVentaId) query = query.eq("punto_venta_id", puntoVentaId);
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   const grouped: Record<string, { cantidad: number; total: number }> = {};

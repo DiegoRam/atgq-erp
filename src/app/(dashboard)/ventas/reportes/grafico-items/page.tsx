@@ -25,6 +25,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import {
+  PuntoVentaFilter,
+  TODOS_PDV,
+  pdvFiltro,
+} from "@/components/ventas/PuntoVentaFilter";
 import { getTopItemsPorRevenue } from "./actions";
 
 interface ItemRevenue {
@@ -37,12 +42,14 @@ export default function GraficoItemsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
+  const [puntoVentaId, setPuntoVentaId] = useState(TODOS_PDV);
 
   function handleSearch() {
     setIsLoading(true);
     getTopItemsPorRevenue({
       fecha_desde: fechaDesde || undefined,
       fecha_hasta: fechaHasta || undefined,
+      punto_venta_id: pdvFiltro(puntoVentaId),
     })
       .then(setData)
       .finally(() => setIsLoading(false));
@@ -78,6 +85,7 @@ export default function GraficoItemsPage() {
               onChange={(e) => setFechaHasta(e.target.value)}
             />
           </div>
+          <PuntoVentaFilter value={puntoVentaId} onChange={setPuntoVentaId} />
           <Button onClick={handleSearch} size="sm" className="self-end">
             <Search className="mr-1.5 h-4 w-4" />
             Buscar

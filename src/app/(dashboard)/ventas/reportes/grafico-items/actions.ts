@@ -10,6 +10,7 @@ interface ItemRevenue {
 export async function getTopItemsPorRevenue(params: {
   fecha_desde?: string;
   fecha_hasta?: string;
+  punto_venta_id?: string;
 }): Promise<ItemRevenue[]> {
   const supabase = createClient();
 
@@ -17,7 +18,7 @@ export async function getTopItemsPorRevenue(params: {
   const query = supabase
     .from("ventas_items")
     .select(
-      "subtotal, item:items_ventas(nombre), venta:ventas!inner(fecha, anulada)",
+      "subtotal, item:items_ventas(nombre), venta:ventas!inner(fecha, anulada, punto_venta_id)",
     );
 
   const { data, error } = await query;
@@ -28,8 +29,14 @@ export async function getTopItemsPorRevenue(params: {
     const venta = row.venta as unknown as {
       fecha: string;
       anulada: boolean;
+      punto_venta_id: string;
     };
     if (venta.anulada) continue;
+    if (
+      params.punto_venta_id &&
+      venta.punto_venta_id !== params.punto_venta_id
+    )
+      continue;
     if (params.fecha_desde && venta.fecha < params.fecha_desde) continue;
     if (
       params.fecha_hasta &&

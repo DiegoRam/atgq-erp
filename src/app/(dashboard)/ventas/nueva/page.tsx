@@ -30,19 +30,26 @@ import {
   getClientesForSelect,
   getMetodosPago,
   getSociosForAutocomplete,
+  getPuntosVentaActivos,
   crearVenta,
 } from "./actions";
 import type { ItemVenta, CartItem } from "@/types/ventas";
+import type { Deposito } from "@/types/stock";
 
 type ClienteOption = { id: string; apellido: string; nombre: string };
 type SocioOption = { id: string; nro_socio: number; apellido: string; nombre: string };
 type MetodoPago = { id: string; nombre: string };
+
+/** El cajero trabaja en un mismo sector todo el turno: se recuerda su elección */
+const PDV_STORAGE_KEY = "atgq-erp-pdv";
 
 export default function NuevaVentaPage() {
   const [items, setItems] = useState<ItemVenta[]>([]);
   const [clientes, setClientes] = useState<ClienteOption[]>([]);
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([]);
   const [socioResults, setSocioResults] = useState<SocioOption[]>([]);
+  const [puntosVenta, setPuntosVenta] = useState<Deposito[]>([]);
+  const [puntoVentaId, setPuntoVentaId] = useState("");
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -65,16 +72,32 @@ export default function NuevaVentaPage() {
       getItemsVentasActivos(),
       getClientesForSelect(),
       getMetodosPago(),
-    ]).then(([itemsData, clientesData, metodosData]) => {
+      getPuntosVentaActivos(),
+    ]).then(([itemsData, clientesData, metodosData, puntosData]) => {
       setItems(itemsData);
       setClientes(clientesData);
       setMetodosPago(metodosData);
+      setPuntosVenta(puntosData);
+
       if (metodosData.length > 0) {
         const efectivo = metodosData.find((m) => m.nombre === "Efectivo");
         if (efectivo) setMetodoPagoId(efectivo.id);
       }
+
+      // Preseleccionar el último punto de venta usado, si sigue activo
+      const guardado = window.localStorage.getItem(PDV_STORAGE_KEY);
+      if (guardado && puntosData.some((p) => p.id === guardado)) {
+        setPuntoVentaId(guardado);
+      } else if (puntosData.length === 1) {
+        setPuntoVentaId(puntosData[0].id);
+      }
     });
   }, []);
+
+  function handleSelectPuntoVenta(id: string) {
+    setPuntoVentaId(id);
+    window.localStorage.setItem(PDV_STORAGE_KEY, id);
+  }
 
   const searchSocios = useCallback(async (term: string) => {
     if (term.length < 2) {
@@ -136,6 +159,10 @@ export default function NuevaVentaPage() {
       toast.error("Agregue al menos un ítem");
       return;
     }
+    if (!puntoVentaId) {
+      toast.error("Seleccione un punto de venta");
+      return;
+    }
     if (!metodoPagoId) {
       toast.error("Seleccione un método de pago");
       return;
@@ -151,16 +178,24 @@ export default function NuevaVentaPage() {
 
     setIsSubmitting(true);
     try {
-      await crearVenta({
+      const result = await crearVenta({
+        punto_venta_id: puntoVentaId,
         socio_id: tipoCliente === "socio" ? selectedSocioId : null,
         cliente_id: tipoCliente === "cliente" ? selectedClienteId : null,
         metodo_pago_id: metodoPagoId,
         items: cart.map((c) => ({
           item_id: c.item_id,
           cantidad: c.cantidad,
-          precio_unitario: c.precio_unitario,
         })),
       });
+
+      if (result.items_negativos.length > 0) {
+        toast.warning(
+          `Stock negativo en: ${result.items_negativos
+            .map((i) => `${i.nombre} (${i.cantidad})`)
+            .join(", ")}`,
+        );
+      }
       setSuccessDialog(true);
     } catch (err) {
       toast.error(
@@ -229,6 +264,28 @@ export default function NuevaVentaPage() {
         {/* Right: Client + Payment */}
         <div className="space-y-4 lg:col-span-4">
           <div className="rounded-md border p-4 space-y-4">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Punto de Venta</Label>
+              <Select value={puntoVentaId} onValueChange={handleSelectPuntoVenta}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar sector..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {puntosVenta.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {puntosVenta.length === 0 && (
+                <p className="text-xs text-red-500">
+                  No hay puntos de venta activos. Cree uno en Stock &rarr;
+                  Puntos de Venta.
+                </p>
+              )}
+            </div>
+
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Tipo de cliente</Label>
               <div className="flex gap-2">
@@ -327,7 +384,7 @@ export default function NuevaVentaPage() {
                 className="w-full"
                 size="lg"
                 onClick={handleConfirm}
-                disabled={isSubmitting || cart.length === 0}
+                disabled={isSubmitting || cart.length === 0 || !puntoVentaId}
               >
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 {isSubmitting ? "Procesando..." : "Confirmar Venta"}

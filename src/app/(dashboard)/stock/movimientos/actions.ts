@@ -18,7 +18,7 @@ export async function getMovimientosStock(
   let query = supabase
     .from("movimientos_stock")
     .select(
-      "*, item:stock_items!item_id(id,nombre), deposito:depositos!deposito_id(id,nombre)",
+      "*, item:stock_items!item_id(id,nombre), deposito:depositos!deposito_id(id,nombre,tipo), deposito_destino:depositos!deposito_destino_id(id,nombre)",
       { count: "exact" },
     )
     .order("created_at", { ascending: false });

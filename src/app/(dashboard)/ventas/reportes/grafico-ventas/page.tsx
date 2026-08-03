@@ -21,6 +21,11 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
+import {
+  PuntoVentaFilter,
+  TODOS_PDV,
+  pdvFiltro,
+} from "@/components/ventas/PuntoVentaFilter";
 import { getVentasMensualesChart } from "./actions";
 
 interface VentaMensualChart {
@@ -31,16 +36,21 @@ interface VentaMensualChart {
 export default function GraficoVentasPage() {
   const [data, setData] = useState<VentaMensualChart[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [puntoVentaId, setPuntoVentaId] = useState(TODOS_PDV);
 
   useEffect(() => {
-    getVentasMensualesChart()
+    setIsLoading(true);
+    getVentasMensualesChart(pdvFiltro(puntoVentaId))
       .then(setData)
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [puntoVentaId]);
 
   return (
     <ReportLayout
       title="Gráfico de Ventas"
+      filters={
+        <PuntoVentaFilter value={puntoVentaId} onChange={setPuntoVentaId} />
+      }
       chart={
         data.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>

@@ -9,16 +9,22 @@ interface VentaMensualRow {
   promedio: number;
 }
 
-export async function getVentasMensuales(anio: number): Promise<VentaMensualRow[]> {
+export async function getVentasMensuales(
+  anio: number,
+  puntoVentaId?: string,
+): Promise<VentaMensualRow[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("ventas")
     .select("fecha, total")
     .eq("anulada", false)
     .gte("fecha", `${anio}-01-01`)
     .lte("fecha", `${anio}-12-31T23:59:59`);
 
+  if (puntoVentaId) query = query.eq("punto_venta_id", puntoVentaId);
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   const meses = [

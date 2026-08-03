@@ -48,12 +48,16 @@ export function DepositoForm({
         nombre: deposito.nombre,
         descripcion: deposito.descripcion,
         activo: deposito.activo,
+        tipo: "deposito",
+        caja_id: null,
       });
     } else if (open) {
       reset({
         nombre: "",
         descripcion: null,
         activo: true,
+        tipo: "deposito",
+        caja_id: null,
       });
     }
   }, [open, deposito, reset]);

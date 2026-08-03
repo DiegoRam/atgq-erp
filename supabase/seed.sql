@@ -119,12 +119,18 @@ WHERE r.nombre = 'Solo Lectura'
 ON CONFLICT (rol_id, modulo) DO NOTHING;
 
 -- =========================
--- Depósito Inicial
+-- Ubicaciones de Stock (depósitos y puntos de venta)
 -- =========================
 
-INSERT INTO depositos (nombre, descripcion, activo) VALUES
-  ('Deposito Central', 'Depósito principal del club', true)
+INSERT INTO depositos (nombre, descripcion, activo, tipo) VALUES
+  ('Deposito Central', 'Depósito principal del club', true, 'deposito')
 ON CONFLICT (nombre) DO NOTHING;
+
+-- Los sectores del club que venden al público (nombres del sistema legacy)
+INSERT INTO depositos (nombre, descripcion, activo, tipo) VALUES
+  ('Secretaria',    'Punto de venta — mostrador de secretaría', true, 'punto_venta'),
+  ('Tiro Practico', 'Punto de venta — sector Tiro Práctico',    true, 'punto_venta')
+ON CONFLICT (nombre) DO UPDATE SET tipo = 'punto_venta';
 
 -- =========================
 -- Categorías de Movimientos de Tesorería

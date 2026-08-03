@@ -131,6 +131,14 @@
 
 ---
 
+## FASE 10 — Puntos de Venta
+
+| ID | Tarea | Estado | Fecha |
+|----|-------|--------|-------|
+| P10.1 | Punto de venta como ubicación de stock + transferencias entre ubicaciones | ✅ | 2026-08-03 |
+
+---
+
 ## Bloqueadores activos
 
 _Ninguno por ahora._

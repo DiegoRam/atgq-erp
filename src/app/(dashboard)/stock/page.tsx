@@ -27,11 +27,16 @@ import {
 import { exportToCSV } from "@/lib/format";
 import { exportToExcel } from "@/lib/export";
 import { getInventario } from "./actions";
-import type { InventarioRow } from "@/types/stock";
+import {
+  TIPO_UBICACION_LABELS,
+  type InventarioRow,
+  type TipoUbicacion,
+} from "@/types/stock";
 
 interface DepositoGroup {
   deposito_id: string;
   deposito_nombre: string;
+  deposito_tipo: TipoUbicacion;
   items: InventarioRow[];
 }
 
@@ -68,12 +73,13 @@ export default function InventarioPage() {
 
       for (const row of data) {
         const depId = row.deposito_id;
-        const depName = row.deposito?.nombre ?? "Sin depósito";
+        const depName = row.deposito?.nombre ?? "Sin ubicación";
 
         if (!groupMap.has(depId)) {
           groupMap.set(depId, {
             deposito_id: depId,
             deposito_nombre: depName,
+            deposito_tipo: row.deposito?.tipo ?? "deposito",
             items: [],
           });
         }
@@ -83,8 +89,10 @@ export default function InventarioPage() {
       }
 
       // Sort groups by name
-      const sorted = Array.from(groupMap.values()).sort((a, b) =>
-        a.deposito_nombre.localeCompare(b.deposito_nombre),
+      const sorted = Array.from(groupMap.values()).sort(
+        (a, b) =>
+          a.deposito_tipo.localeCompare(b.deposito_tipo) ||
+          a.deposito_nombre.localeCompare(b.deposito_nombre),
       );
 
       // Sort items within each group
@@ -106,7 +114,8 @@ export default function InventarioPage() {
   }, [fetchData]);
 
   const inventarioHeaders = [
-    { key: "deposito", label: "Depósito" },
+    { key: "tipo", label: "Tipo" },
+    { key: "deposito", label: "Ubicación" },
     { key: "item", label: "Ítem" },
     { key: "unidad", label: "Unidad" },
     { key: "cantidad", label: "Cantidad" },
@@ -117,6 +126,7 @@ export default function InventarioPage() {
     for (const group of filteredGroups) {
       for (const row of group.items) {
         rows.push({
+          tipo: TIPO_UBICACION_LABELS[group.deposito_tipo],
           deposito: group.deposito_nombre,
           item: row.item?.nombre ?? "",
           unidad: row.item?.unidad ?? "",
@@ -170,7 +180,7 @@ export default function InventarioPage() {
       <div className="relative sm:max-w-xs">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por ítem, unidad o depósito..."
+          placeholder="Buscar por ítem, unidad o ubicación..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-8"
@@ -190,10 +200,23 @@ export default function InventarioPage() {
           {filteredGroups.map((group) => (
             <Collapsible key={group.deposito_id} defaultOpen>
               <CollapsibleTrigger asChild>
-                <button className="flex w-full items-center justify-between rounded-md bg-blue-50 px-4 py-2.5 text-left font-medium text-blue-900 hover:bg-blue-100">
+                <button
+                  className={`flex w-full items-center justify-between rounded-md px-4 py-2.5 text-left font-medium ${
+                    group.deposito_tipo === "punto_venta"
+                      ? "bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
+                      : "bg-blue-50 text-blue-900 hover:bg-blue-100"
+                  }`}
+                >
                   <span>
-                    Depósito &rArr; {group.deposito_nombre}{" "}
-                    <span className="text-sm font-normal text-blue-600">
+                    {TIPO_UBICACION_LABELS[group.deposito_tipo]} &rArr;{" "}
+                    {group.deposito_nombre}{" "}
+                    <span
+                      className={`text-sm font-normal ${
+                        group.deposito_tipo === "punto_venta"
+                          ? "text-emerald-600"
+                          : "text-blue-600"
+                      }`}
+                    >
                       ({group.items.length} ítems)
                     </span>
                   </span>

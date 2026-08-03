@@ -4,24 +4,29 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { Deposito, DepositoFormData } from "@/types/stock";
 
-export async function getDepositos(): Promise<Deposito[]> {
+/**
+ * Los puntos de venta son filas de `depositos` con tipo = 'punto_venta',
+ * así el inventario y los movimientos de stock sirven para ambos sin
+ * duplicar tablas ni FKs.
+ */
+export async function getPuntosVenta(): Promise<Deposito[]> {
   const supabase = createClient();
 
-  const { data: depositos, error } = await supabase
+  const { data: puntos, error } = await supabase
     .from("depositos")
-    .select("*")
-    .eq("tipo", "deposito")
+    .select("*, caja:cajas(id, nombre)")
+    .eq("tipo", "punto_venta")
     .order("nombre");
 
   if (error) throw new Error(error.message);
-  if (!depositos || depositos.length === 0) return [];
+  if (!puntos || puntos.length === 0) return [];
 
-  // Count items with qty > 0 per deposito
-  const depositoIds = depositos.map((d) => d.id);
+  // Ítems con existencia > 0 por punto de venta
+  const puntoIds = puntos.map((p) => p.id);
   const { data: inventario } = await supabase
     .from("stock_inventario")
     .select("deposito_id, cantidad")
-    .in("deposito_id", depositoIds);
+    .in("deposito_id", puntoIds);
 
   const itemCounts: Record<string, number> = {};
   if (inventario) {
@@ -32,34 +37,46 @@ export async function getDepositos(): Promise<Deposito[]> {
     }
   }
 
-  return depositos.map((d) => ({
-    ...d,
-    item_count: itemCounts[d.id] ?? 0,
+  return puntos.map((p) => ({
+    ...p,
+    item_count: itemCounts[p.id] ?? 0,
   })) as Deposito[];
 }
 
-export async function createDeposito(formData: DepositoFormData) {
+export async function getCajasForSelect() {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("cajas")
+    .select("id, nombre")
+    .eq("activa", true)
+    .order("nombre");
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function createPuntoVenta(formData: DepositoFormData) {
   const supabase = createClient();
   const { error } = await supabase.from("depositos").insert({
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
     activo: formData.activo,
-    tipo: "deposito",
-    caja_id: null,
+    tipo: "punto_venta",
+    caja_id: formData.caja_id || null,
   });
   if (error) {
     if (error.code === "23505") {
-      throw new Error("Ya existe un depósito con ese nombre");
+      throw new Error("Ya existe una ubicación con ese nombre");
     }
     throw new Error(error.message);
   }
-  revalidatePath("/stock/depositos");
+  revalidatePath("/stock/puntos-venta");
+  revalidatePath("/ventas/nueva");
 }
 
-export async function updateDeposito(id: string, formData: DepositoFormData) {
+export async function updatePuntoVenta(id: string, formData: DepositoFormData) {
   const supabase = createClient();
 
-  // If deactivating, check no stock
+  // No se puede desactivar un punto de venta con existencias
   if (!formData.activo) {
     const { data: withStock } = await supabase
       .from("stock_inventario")
@@ -70,7 +87,7 @@ export async function updateDeposito(id: string, formData: DepositoFormData) {
 
     if (withStock && withStock.length > 0) {
       throw new Error(
-        "No se puede desactivar un depósito con ítems en stock",
+        "No se puede desactivar un punto de venta con ítems en stock",
       );
     }
   }
@@ -81,15 +98,17 @@ export async function updateDeposito(id: string, formData: DepositoFormData) {
       nombre: formData.nombre,
       descripcion: formData.descripcion || null,
       activo: formData.activo,
+      caja_id: formData.caja_id || null,
     })
     .eq("id", id)
-    .eq("tipo", "deposito");
+    .eq("tipo", "punto_venta");
 
   if (error) {
     if (error.code === "23505") {
-      throw new Error("Ya existe un depósito con ese nombre");
+      throw new Error("Ya existe una ubicación con ese nombre");
     }
     throw new Error(error.message);
   }
-  revalidatePath("/stock/depositos");
+  revalidatePath("/stock/puntos-venta");
+  revalidatePath("/ventas/nueva");
 }
