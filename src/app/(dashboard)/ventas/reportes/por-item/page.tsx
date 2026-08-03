@@ -23,12 +23,18 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/format";
+import {
+  PuntoVentaFilter,
+  TODOS_PDV,
+  pdvFiltro,
+} from "@/components/ventas/PuntoVentaFilter";
 import { getItemsVentasParaFiltro, getVentasPorItem } from "./actions";
 
 interface VentaPorItemRow {
   fecha: string;
   nro_venta: string;
   cliente: string;
+  punto_venta: string;
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
@@ -43,6 +49,7 @@ export default function ReportePorItemPage() {
   const [itemId, setItemId] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
+  const [puntoVentaId, setPuntoVentaId] = useState(TODOS_PDV);
 
   useEffect(() => {
     getItemsVentasParaFiltro().then(setItems);
@@ -55,6 +62,7 @@ export default function ReportePorItemPage() {
       item_id: itemId,
       fecha_desde: fechaDesde || undefined,
       fecha_hasta: fechaHasta || undefined,
+      punto_venta_id: pdvFiltro(puntoVentaId),
     })
       .then(setData)
       .finally(() => setIsLoading(false));
@@ -101,6 +109,7 @@ export default function ReportePorItemPage() {
               onChange={(e) => setFechaHasta(e.target.value)}
             />
           </div>
+          <PuntoVentaFilter value={puntoVentaId} onChange={setPuntoVentaId} />
           <Button
             onClick={handleSearch}
             size="sm"
@@ -121,6 +130,7 @@ export default function ReportePorItemPage() {
                   <TableHead>Fecha</TableHead>
                   <TableHead>Nro Venta</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Punto de Venta</TableHead>
                   <TableHead className="text-right">Cant.</TableHead>
                   <TableHead className="text-right">Precio</TableHead>
                   <TableHead className="text-right">Subtotal</TableHead>
@@ -130,7 +140,7 @@ export default function ReportePorItemPage() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 6 }).map((_, j) => (
+                      {Array.from({ length: 7 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-full" />
                         </TableCell>
@@ -139,7 +149,7 @@ export default function ReportePorItemPage() {
                   ))
                 ) : data.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       {itemId
                         ? "Sin ventas para el período seleccionado."
                         : "Seleccione un ítem y presione Buscar."}
@@ -153,6 +163,7 @@ export default function ReportePorItemPage() {
                         {d.nro_venta}
                       </TableCell>
                       <TableCell>{d.cliente}</TableCell>
+                      <TableCell>{d.punto_venta}</TableCell>
                       <TableCell className="text-right">{d.cantidad}</TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(d.precio_unitario)}

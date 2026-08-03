@@ -83,9 +83,11 @@ export const NAV_MODULES: NavModule[] = [
     items: [
       { label: "Inventario", href: "/stock" },
       { label: "Ingresos / Egresos", href: "/stock/movimientos/nuevo" },
+      { label: "Transferencias de Stock", href: "/stock/transferencias" },
       { label: "Movimientos de Stock", href: "/stock/movimientos" },
       sep,
       { label: "Depósitos", href: "/stock/depositos" },
+      { label: "Puntos de Venta", href: "/stock/puntos-venta" },
       { label: "Ítems de Stock", href: "/stock/items" },
     ],
   },

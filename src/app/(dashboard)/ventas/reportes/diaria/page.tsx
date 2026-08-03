@@ -23,6 +23,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/format";
+import {
+  PuntoVentaFilter,
+  TODOS_PDV,
+  pdvFiltro,
+} from "@/components/ventas/PuntoVentaFilter";
 import { getVentasDiarias } from "./actions";
 
 interface VentaDiariaRow {
@@ -54,10 +59,11 @@ export default function ReporteDiariaPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [anio, setAnio] = useState(String(currentYear));
   const [mes, setMes] = useState(String(currentMonth));
+  const [puntoVentaId, setPuntoVentaId] = useState(TODOS_PDV);
 
   function handleSearch() {
     setIsLoading(true);
-    getVentasDiarias(parseInt(anio), parseInt(mes))
+    getVentasDiarias(parseInt(anio), parseInt(mes), pdvFiltro(puntoVentaId))
       .then(setData)
       .finally(() => setIsLoading(false));
   }
@@ -105,6 +111,7 @@ export default function ReporteDiariaPage() {
               </SelectContent>
             </Select>
           </div>
+          <PuntoVentaFilter value={puntoVentaId} onChange={setPuntoVentaId} />
           <Button onClick={handleSearch} size="sm" className="self-end">
             <Search className="mr-1.5 h-4 w-4" />
             Buscar

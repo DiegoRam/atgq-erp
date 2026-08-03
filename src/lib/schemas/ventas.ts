@@ -22,15 +22,16 @@ export type ItemVentaSchemaType = z.infer<typeof itemVentaSchema>;
 
 export const nuevaVentaSchema = z
   .object({
+    punto_venta_id: z.string().uuid("Seleccione un punto de venta"),
     cliente_id: z.string().uuid().nullable().optional(),
     socio_id: z.string().uuid().nullable().optional(),
     metodo_pago_id: z.string().uuid("Seleccione un método de pago"),
+    // El precio no viaja desde el browser: lo resuelve registrar_venta
     items: z
       .array(
         z.object({
           item_id: z.string().uuid(),
           cantidad: z.number().int().positive(),
-          precio_unitario: z.number().positive(),
         }),
       )
       .min(1, "Agregue al menos un ítem"),

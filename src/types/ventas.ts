@@ -43,6 +43,7 @@ export interface Venta {
   id: string;
   cliente_id: string | null;
   socio_id: string | null;
+  punto_venta_id: string;
   fecha: string;
   total: number;
   metodo_pago_id: string | null;
@@ -53,6 +54,7 @@ export interface Venta {
   cliente?: { id: string; apellido: string; nombre: string } | null;
   socio?: { id: string; nro_socio: number; apellido: string; nombre: string } | null;
   metodo_pago?: { id: string; nombre: string } | null;
+  punto_venta?: { id: string; nombre: string } | null;
   items_count?: number;
 }
 
@@ -82,10 +84,26 @@ export interface CartItem {
 }
 
 export interface NuevaVentaData {
+  punto_venta_id: string;
   cliente_id?: string | null;
   socio_id?: string | null;
   metodo_pago_id: string;
-  items: { item_id: string; cantidad: number; precio_unitario: number }[];
+  // Sin precio_unitario: el precio lo resuelve registrar_venta desde items_ventas
+  items: { item_id: string; cantidad: number }[];
+}
+
+/** Fila devuelta por la RPC registrar_venta */
+export interface CrearVentaResult {
+  venta_id: string;
+  venta_total: number;
+  movimiento_fondo_id: string | null;
+  items_negativos: { nombre: string; cantidad: number }[];
+}
+
+/** Fila devuelta por la RPC anular_venta */
+export interface AnularVentaResult {
+  items_restituidos: number;
+  movimiento_fondo_id: string | null;
 }
 
 export interface VentasSearchParams {
@@ -94,4 +112,5 @@ export interface VentasSearchParams {
   fecha_desde?: string;
   fecha_hasta?: string;
   estado?: string; // "todas" | "activas" | "anuladas"
+  punto_venta_id?: string;
 }

@@ -24,6 +24,11 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
+import {
+  PuntoVentaFilter,
+  TODOS_PDV,
+  pdvFiltro,
+} from "@/components/ventas/PuntoVentaFilter";
 import { getVentasMensuales } from "./actions";
 
 interface VentaMensualRow {
@@ -40,13 +45,14 @@ export default function ReporteMensualPage() {
   const [data, setData] = useState<VentaMensualRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [anio, setAnio] = useState(String(currentYear));
+  const [puntoVentaId, setPuntoVentaId] = useState(TODOS_PDV);
 
   useEffect(() => {
     setIsLoading(true);
-    getVentasMensuales(parseInt(anio))
+    getVentasMensuales(parseInt(anio), pdvFiltro(puntoVentaId))
       .then(setData)
       .finally(() => setIsLoading(false));
-  }, [anio]);
+  }, [anio, puntoVentaId]);
 
   const totalVentas = data.reduce((s, d) => s + d.cantidad, 0);
   const totalMonto = data.reduce((s, d) => s + d.total, 0);
@@ -80,21 +86,24 @@ export default function ReporteMensualPage() {
         </Button>
       }
       filters={
-        <div className="space-y-1">
-          <Label className="text-xs">Año</Label>
-          <Select value={anio} onValueChange={setAnio}>
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <>
+          <div className="space-y-1">
+            <Label className="text-xs">Año</Label>
+            <Select value={anio} onValueChange={setAnio}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <PuntoVentaFilter value={puntoVentaId} onChange={setPuntoVentaId} />
+        </>
       }
       table={
         <div className="overflow-x-auto rounded-md border">

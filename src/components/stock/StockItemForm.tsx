@@ -8,12 +8,26 @@ import { FormModal } from "@/components/shared/FormModal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { stockItemSchema, type StockItemSchemaType } from "@/lib/schemas/stock";
 import {
   createStockItem,
   updateStockItem,
+  getUbicacionesParaStockInicial,
 } from "@/app/(dashboard)/stock/items/actions";
-import type { StockItem } from "@/types/stock";
+import {
+  TIPO_UBICACION_LABELS,
+  type Deposito,
+  type StockItem,
+} from "@/types/stock";
 
 interface StockItemFormProps {
   open: boolean;
@@ -29,6 +43,7 @@ export function StockItemForm({
   onSaved,
 }: StockItemFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ubicaciones, setUbicaciones] = useState<Deposito[]>([]);
   const isEditing = !!item;
 
   const {
@@ -41,6 +56,13 @@ export function StockItemForm({
   } = useForm<StockItemSchemaType>({
     resolver: zodResolver(stockItemSchema),
   });
+
+  useEffect(() => {
+    if (!open || isEditing) return;
+    getUbicacionesParaStockInicial()
+      .then(setUbicaciones)
+      .catch(() => setUbicaciones([]));
+  }, [open, isEditing]);
 
   useEffect(() => {
     if (open && item) {
@@ -57,6 +79,7 @@ export function StockItemForm({
         unidad: "unidad",
         activo: true,
         stock_inicial: undefined,
+        deposito_id: null,
       });
     }
   }, [open, item, reset]);
@@ -87,6 +110,7 @@ export function StockItemForm({
   }
 
   const activoValue = watch("activo");
+  const depositoValue = watch("deposito_id");
 
   return (
     <FormModal
@@ -124,18 +148,54 @@ export function StockItemForm({
         </div>
 
         {!isEditing && (
-          <div className="space-y-1">
-            <Label htmlFor="stock_inicial">Stock Inicial (opcional)</Label>
-            <Input
-              id="stock_inicial"
-              type="number"
-              {...register("stock_inicial", { valueAsNumber: true })}
-              placeholder="0"
-            />
-            <p className="text-xs text-muted-foreground">
-              Se ingresará en el Depósito Central
-            </p>
-          </div>
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="stock_inicial">Stock Inicial (opcional)</Label>
+              <Input
+                id="stock_inicial"
+                type="number"
+                {...register("stock_inicial", { valueAsNumber: true })}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="deposito_id">Ubicación del stock inicial</Label>
+              <Select
+                value={depositoValue ?? ""}
+                onValueChange={(v) => setValue("deposito_id", v)}
+              >
+                <SelectTrigger id="deposito_id">
+                  <SelectValue placeholder="Seleccionar ubicación..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["deposito", "punto_venta"] as const)
+                    .map((tipo) => ({
+                      tipo,
+                      opciones: ubicaciones.filter((u) => u.tipo === tipo),
+                    }))
+                    .filter((g) => g.opciones.length > 0)
+                    .map((g) => (
+                      <SelectGroup key={g.tipo}>
+                        <SelectLabel>
+                          {TIPO_UBICACION_LABELS[g.tipo]}
+                        </SelectLabel>
+                        {g.opciones.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                </SelectContent>
+              </Select>
+              {errors.deposito_id && (
+                <p className="text-xs text-red-500">
+                  {errors.deposito_id.message}
+                </p>
+              )}
+            </div>
+          </>
         )}
 
         <div className="flex items-center gap-2">

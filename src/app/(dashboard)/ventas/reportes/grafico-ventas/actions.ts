@@ -7,18 +7,23 @@ interface VentaMensualChart {
   total: number;
 }
 
-export async function getVentasMensualesChart(): Promise<VentaMensualChart[]> {
+export async function getVentasMensualesChart(
+  puntoVentaId?: string,
+): Promise<VentaMensualChart[]> {
   const supabase = createClient();
 
   const doceAtras = new Date();
   doceAtras.setMonth(doceAtras.getMonth() - 12);
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("ventas")
     .select("fecha, total")
     .eq("anulada", false)
     .gte("fecha", doceAtras.toISOString());
 
+  if (puntoVentaId) query = query.eq("punto_venta_id", puntoVentaId);
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   const meses = [

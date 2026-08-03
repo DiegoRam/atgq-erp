@@ -2,7 +2,26 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import type { ItemVenta, NuevaVentaData } from "@/types/ventas";
+import { nuevaVentaSchema } from "@/lib/schemas/ventas";
+import type {
+  ItemVenta,
+  NuevaVentaData,
+  CrearVentaResult,
+} from "@/types/ventas";
+import type { Deposito } from "@/types/stock";
+
+/** Sectores del club habilitados para vender */
+export async function getPuntosVentaActivos(): Promise<Deposito[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("depositos")
+    .select("id, nombre, descripcion, activo, tipo, caja_id, created_at")
+    .eq("tipo", "punto_venta")
+    .eq("activo", true)
+    .order("nombre");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Deposito[];
+}
 
 export async function getItemsVentasActivos(): Promise<ItemVenta[]> {
   const supabase = createClient();
@@ -62,116 +81,39 @@ export async function getSociosForAutocomplete(search: string) {
   return data ?? [];
 }
 
-export async function crearVenta(ventaData: NuevaVentaData) {
+export async function crearVenta(
+  ventaData: NuevaVentaData,
+): Promise<CrearVentaResult> {
   const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado");
+  const parsed = nuevaVentaSchema.safeParse(ventaData);
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
-  // Calculate total
-  const total = ventaData.items.reduce(
-    (sum, item) => sum + item.cantidad * item.precio_unitario,
-    0,
-  );
+  // RPC atómica: cabecera, ítems, egreso de stock del punto de venta e
+  // ingreso en su caja ocurren en una sola transacción. Los precios los
+  // resuelve el servidor desde items_ventas, no viajan desde el browser.
+  const { data, error } = await supabase.rpc("registrar_venta", {
+    p_punto_venta_id: parsed.data.punto_venta_id,
+    p_cliente_id: parsed.data.cliente_id || null,
+    p_socio_id: parsed.data.socio_id || null,
+    p_metodo_pago_id: parsed.data.metodo_pago_id,
+    p_items: parsed.data.items,
+  });
+  if (error) throw new Error(error.message);
 
-  // Insert venta
-  const { data: venta, error: ventaError } = await supabase
-    .from("ventas")
-    .insert({
-      cliente_id: ventaData.cliente_id || null,
-      socio_id: ventaData.socio_id || null,
-      fecha: new Date().toISOString(),
-      total,
-      metodo_pago_id: ventaData.metodo_pago_id,
-      usuario_id: user.id,
-      anulada: false,
-    })
-    .select("id")
-    .single();
-
-  if (ventaError) throw new Error(ventaError.message);
-
-  // Insert venta items
-  const ventaItems = ventaData.items.map((item) => ({
-    venta_id: venta.id,
-    item_id: item.item_id,
-    cantidad: item.cantidad,
-    precio_unitario: item.precio_unitario,
-    subtotal: item.cantidad * item.precio_unitario,
-  }));
-
-  const { error: itemsError } = await supabase
-    .from("ventas_items")
-    .insert(ventaItems);
-
-  if (itemsError) throw new Error(itemsError.message);
-
-  // Deduct stock for linked items
-  // Get items_ventas with stock_item_id
-  const itemIds = ventaData.items.map((i) => i.item_id);
-  const { data: itemsConStock } = await supabase
-    .from("items_ventas")
-    .select("id, stock_item_id")
-    .in("id", itemIds)
-    .not("stock_item_id", "is", null);
-
-  if (itemsConStock && itemsConStock.length > 0) {
-    // Get default deposito
-    const { data: deposito } = await supabase
-      .from("depositos")
-      .select("id")
-      .eq("nombre", "Deposito Central")
-      .single();
-
-    if (deposito) {
-      for (const itemVenta of itemsConStock) {
-        const cartItem = ventaData.items.find((i) => i.item_id === itemVenta.id);
-        if (!cartItem || !itemVenta.stock_item_id) continue;
-
-        // Insert stock movement (egreso)
-        await supabase.from("movimientos_stock").insert({
-          item_id: itemVenta.stock_item_id,
-          deposito_id: deposito.id,
-          tipo: "egreso",
-          cantidad: cartItem.cantidad,
-          motivo: `Venta #${venta.id.slice(0, 8)}`,
-          referencia_id: venta.id,
-          usuario_id: user.id,
-        });
-
-        // Update inventory
-        const { data: existing } = await supabase
-          .from("stock_inventario")
-          .select("id, cantidad")
-          .eq("item_id", itemVenta.stock_item_id)
-          .eq("deposito_id", deposito.id)
-          .single();
-
-        if (existing) {
-          await supabase
-            .from("stock_inventario")
-            .update({
-              cantidad: existing.cantidad - cartItem.cantidad,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id);
-        } else {
-          await supabase.from("stock_inventario").insert({
-            item_id: itemVenta.stock_item_id,
-            deposito_id: deposito.id,
-            cantidad: -cartItem.cantidad,
-          });
-        }
-      }
-    }
-  }
+  const row = (data as CrearVentaResult[] | null)?.[0];
+  if (!row) throw new Error("No se pudo registrar la venta");
 
   revalidatePath("/ventas");
   revalidatePath("/ventas/nueva");
   revalidatePath("/stock");
   revalidatePath("/stock/items");
+  revalidatePath("/tesoreria/cajas");
+  revalidatePath("/tesoreria/movimientos");
 
-  return { success: true, ventaId: venta.id };
+  return {
+    ...row,
+    venta_total: Number(row.venta_total),
+    items_negativos: row.items_negativos ?? [],
+  };
 }

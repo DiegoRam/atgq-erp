@@ -9,7 +9,7 @@ export async function getInventario(): Promise<InventarioRow[]> {
   const { data, error } = await supabase
     .from("stock_inventario")
     .select(
-      "*, item:stock_items!item_id(id, nombre, unidad), deposito:depositos!deposito_id(id, nombre)",
+      "*, item:stock_items!item_id(id, nombre, unidad), deposito:depositos!deposito_id(id, nombre, tipo)",
     )
     .order("deposito_id")
     .order("item_id");

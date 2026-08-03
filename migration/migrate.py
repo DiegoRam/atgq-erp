@@ -361,9 +361,34 @@ def mig_depositos(my, pg):
         if nom in seen:
             nom = f"{nom} ({r['idDeposito']})"
         seen.add(nom)
-        rows.append((nid("depositos", r["idDeposito"]), nom, None, True))
-    return copy(pg, "INSERT INTO depositos (id,nombre,descripcion,activo) "
+        # Los "depósitos" legacy que no son almacén interno (Tiro Practico,
+        # Secretaria, ...) son en realidad los sectores que venden al público
+        low = nom.lower()
+        tipo = "deposito" if ("deposito" in low or "depósito" in low) \
+            else "punto_venta"
+        rows.append((nid("depositos", r["idDeposito"]), nom, None, True, tipo))
+    return copy(pg, "INSERT INTO depositos (id,nombre,descripcion,activo,tipo) "
                 "VALUES %s ON CONFLICT (id) DO NOTHING", rows)
+
+
+def default_punto_venta(pg):
+    """UUID del punto de venta al que caen las ventas legacy.
+
+    VentasCabecera no tiene columna de sector, así que un default es la
+    única opción. Si el legacy no trajo ningún punto de venta, se crea uno.
+    """
+    with pg.cursor() as cur:
+        cur.execute("SELECT id FROM depositos WHERE tipo='punto_venta' "
+                    "ORDER BY nombre LIMIT 1")
+        row = cur.fetchone()
+        if row:
+            return row[0]
+        pdv = nid("depositos", "__default_punto_venta__")
+        cur.execute(
+            "INSERT INTO depositos (id,nombre,descripcion,activo,tipo) "
+            "VALUES (%s,%s,%s,true,'punto_venta') ON CONFLICT (id) DO NOTHING",
+            (pdv, "Secretaria", "Punto de venta por defecto (migración)"))
+        return pdv
 
 
 def mig_stock_inventario(my, pg):
@@ -402,8 +427,12 @@ def mig_movimientos_stock(my, pg):
         if cant == 0:
             skip += 1; continue
         o, d = r["o"], r["d"]
+        dest = None
         if o and d and d != 0:
             tipo, dep = "transferencia", nid("depositos", o)
+            dest = nid("depositos", d)
+            if dest not in dep_ok:
+                dest = None
         elif (r["Cantidad"] or 0) < 0:
             tipo, dep = "egreso", nid("depositos", d or o)
         else:
@@ -411,16 +440,17 @@ def mig_movimientos_stock(my, pg):
         if dep not in dep_ok:
             skip += 1; continue
         rows.append((nid("movimientos_stock", r["id"]), it, dep, tipo, cant,
-                     s(r["Observaciones"]), u, clean_date(r["f"])))
+                     s(r["Observaciones"]), u, clean_date(r["f"]), dest))
     n = copy(pg, "INSERT INTO movimientos_stock (id,item_id,deposito_id,tipo,"
-             "cantidad,motivo,usuario_id,created_at) VALUES %s "
-             "ON CONFLICT (id) DO NOTHING", rows)
+             "cantidad,motivo,usuario_id,created_at,deposito_destino_id) "
+             "VALUES %s ON CONFLICT (id) DO NOTHING", rows)
     print(f"    movimientos_stock={n} omit={skip}")
     return n
 
 
 def mig_ventas(my, pg):
     socio_ok, cli_ok, u = ids(pg, "socios"), ids(pg, "clientes"), mig_user()
+    pdv = default_punto_venta(pg)
     with my.cursor() as c:
         c.execute("SELECT idVentasCabecera id,CAST(Fecha AS CHAR) f,Total,"
                   "Socios_NroSocio soc,Clientes_idClientes cli FROM VentasCabecera")
@@ -433,9 +463,9 @@ def mig_ventas(my, pg):
         cl = cl if cl in cli_ok else None
         fecha = clean_date(r["f"]) or "1900-01-01"
         rows.append((nid("ventas", r["id"]), cl, so, fecha, r["Total"] or 0,
-                     None, u, False))
+                     None, u, False, pdv))
     n = copy(pg, "INSERT INTO ventas (id,cliente_id,socio_id,fecha,total,"
-             "metodo_pago_id,usuario_id,anulada) VALUES %s "
+             "metodo_pago_id,usuario_id,anulada,punto_venta_id) VALUES %s "
              "ON CONFLICT (id) DO NOTHING", rows)
     print(f"    ventas={n}")
     return n

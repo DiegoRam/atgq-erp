@@ -7,6 +7,7 @@ interface VentaPorItemRow {
   fecha: string;
   nro_venta: string;
   cliente: string;
+  punto_venta: string;
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
@@ -28,13 +29,14 @@ export async function getVentasPorItem(params: {
   item_id: string;
   fecha_desde?: string;
   fecha_hasta?: string;
+  punto_venta_id?: string;
 }): Promise<VentaPorItemRow[]> {
   const supabase = createClient();
 
   const query = supabase
     .from("ventas_items")
     .select(
-      "cantidad, precio_unitario, subtotal, venta:ventas!inner(id, fecha, anulada, cliente:clientes(apellido, nombre), socio:socios(nro_socio, apellido, nombre))",
+      "cantidad, precio_unitario, subtotal, venta:ventas!inner(id, fecha, anulada, punto_venta_id, punto_venta:depositos!punto_venta_id(nombre), cliente:clientes(apellido, nombre), socio:socios(nro_socio, apellido, nombre))",
     )
     .eq("item_id", params.item_id);
 
@@ -48,11 +50,18 @@ export async function getVentasPorItem(params: {
       id: string;
       fecha: string;
       anulada: boolean;
+      punto_venta_id: string;
+      punto_venta: { nombre: string } | null;
       cliente: { apellido: string; nombre: string } | null;
       socio: { nro_socio: number; apellido: string; nombre: string } | null;
     };
 
     if (venta.anulada) continue;
+    if (
+      params.punto_venta_id &&
+      venta.punto_venta_id !== params.punto_venta_id
+    )
+      continue;
 
     if (params.fecha_desde && venta.fecha < params.fecha_desde) continue;
     if (
@@ -72,6 +81,7 @@ export async function getVentasPorItem(params: {
       fecha: venta.fecha,
       nro_venta: venta.id.slice(0, 8).toUpperCase(),
       cliente: clienteStr,
+      punto_venta: venta.punto_venta?.nombre ?? "—",
       cantidad: row.cantidad,
       precio_unitario: Number(row.precio_unitario),
       subtotal: Number(row.subtotal),

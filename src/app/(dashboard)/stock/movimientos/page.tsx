@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -20,12 +22,16 @@ import {
   getItemsParaFiltro,
   getDepositosParaFiltro,
 } from "./actions";
-import type {
-  MovimientoStock,
-  MovimientosStockSearchParams,
-  StockItem,
-  Deposito,
+import {
+  TIPO_UBICACION_LABELS,
+  type MovimientoStock,
+  type MovimientosStockSearchParams,
+  type StockItem,
+  type Deposito,
 } from "@/types/stock";
+
+/** Los Select usan "all" como opción "sin filtro" */
+const sinFiltro = (v: string) => (v && v !== "all" ? v : undefined);
 
 const PAGE_SIZE = 50;
 
@@ -43,8 +49,14 @@ const columns: ColumnDef<MovimientoStock>[] = [
   },
   {
     id: "deposito",
-    header: "Depósito",
+    header: "Ubicación",
     cell: ({ row }) => row.original.deposito?.nombre ?? "—",
+    enableSorting: false,
+  },
+  {
+    id: "deposito_destino",
+    header: "Destino",
+    cell: ({ row }) => row.original.deposito_destino?.nombre ?? "—",
     enableSorting: false,
   },
   {
@@ -120,9 +132,9 @@ export default function MovimientosStockPage() {
       const params: MovimientosStockSearchParams = {
         page,
         pageSize: PAGE_SIZE,
-        item_id: itemId || undefined,
-        deposito_id: depositoId || undefined,
-        tipo: tipo || undefined,
+        item_id: sinFiltro(itemId),
+        deposito_id: sinFiltro(depositoId),
+        tipo: sinFiltro(tipo),
         fecha_desde: fechaDesde || undefined,
         fecha_hasta: fechaHasta || undefined,
       };
@@ -148,6 +160,7 @@ export default function MovimientosStockPage() {
         fecha: formatDate(m.created_at),
         item: m.item?.nombre ?? "",
         deposito: m.deposito?.nombre ?? "",
+        deposito_destino: m.deposito_destino?.nombre ?? "",
         tipo: m.tipo,
         cantidad: m.cantidad,
         motivo: m.motivo ?? "",
@@ -156,7 +169,8 @@ export default function MovimientosStockPage() {
       [
         { key: "fecha", label: "Fecha" },
         { key: "item", label: "Ítem" },
-        { key: "deposito", label: "Depósito" },
+        { key: "deposito", label: "Ubicación" },
+        { key: "deposito_destino", label: "Destino" },
         { key: "tipo", label: "Tipo" },
         { key: "cantidad", label: "Cantidad" },
         { key: "motivo", label: "Motivo" },
@@ -188,18 +202,29 @@ export default function MovimientosStockPage() {
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs">Depósito</Label>
+          <Label className="text-xs">Ubicación</Label>
           <Select value={depositoId} onValueChange={setDepositoId}>
             <SelectTrigger className="w-44">
-              <SelectValue placeholder="Todos" />
+              <SelectValue placeholder="Todas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {depositos.map((d) => (
-                <SelectItem key={d.id} value={d.id}>
-                  {d.nombre}
-                </SelectItem>
-              ))}
+              <SelectItem value="all">Todas</SelectItem>
+              {(["deposito", "punto_venta"] as const)
+                .map((t) => ({
+                  tipo: t,
+                  opciones: depositos.filter((d) => d.tipo === t),
+                }))
+                .filter((g) => g.opciones.length > 0)
+                .map((g) => (
+                  <SelectGroup key={g.tipo}>
+                    <SelectLabel>{TIPO_UBICACION_LABELS[g.tipo]}</SelectLabel>
+                    {g.opciones.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
             </SelectContent>
           </Select>
         </div>

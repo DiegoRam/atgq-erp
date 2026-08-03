@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -27,7 +29,11 @@ import {
   getStockActual,
   registrarMovimientoStock,
 } from "./actions";
-import type { Deposito, StockItem } from "@/types/stock";
+import {
+  TIPO_UBICACION_LABELS,
+  type Deposito,
+  type StockItem,
+} from "@/types/stock";
 
 export default function NuevoMovimientoStockPage() {
   const [depositos, setDepositos] = useState<Deposito[]>([]);
@@ -163,20 +169,33 @@ export default function NuevoMovimientoStockPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label>Depósito</Label>
+                  <Label>Ubicación</Label>
                   <Select
                     value={depositoIdValue || ""}
                     onValueChange={(v) => setValue("deposito_id", v)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar depósito..." />
+                      <SelectValue placeholder="Seleccionar ubicación..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {depositos.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.nombre}
-                        </SelectItem>
-                      ))}
+                      {(["deposito", "punto_venta"] as const)
+                        .map((t) => ({
+                          tipo: t,
+                          opciones: depositos.filter((d) => d.tipo === t),
+                        }))
+                        .filter((g) => g.opciones.length > 0)
+                        .map((g) => (
+                          <SelectGroup key={g.tipo}>
+                            <SelectLabel>
+                              {TIPO_UBICACION_LABELS[g.tipo]}
+                            </SelectLabel>
+                            {g.opciones.map((d) => (
+                              <SelectItem key={d.id} value={d.id}>
+                                {d.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
                     </SelectContent>
                   </Select>
                   {errors.deposito_id && (

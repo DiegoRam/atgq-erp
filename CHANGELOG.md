@@ -10,6 +10,37 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- **P10.1** — Punto de Venta y transferencias de stock entre ubicaciones:
+  - **Modelo**: `depositos` pasa a ser la tabla de *ubicaciones de stock*, con `tipo IN ('deposito','punto_venta')` y `caja_id` opcional. Un punto de venta **es** una fila de `depositos`, así `stock_inventario` y `movimientos_stock` sirven para ambos sin tocar sus FKs. Seed de los PdV reales del legacy: `Secretaria` y `Tiro Practico` (`Deposito Central` sigue siendo depósito).
+  - **`ventas.punto_venta_id`** NOT NULL (FK a `depositos`), con backfill de las ventas existentes al PdV por defecto. Nuevo índice `(punto_venta_id, fecha)`.
+  - **ABM Puntos de Venta** (`/stock/puntos-venta`): alta/edición con caja asociada y contador de ítems en stock; `/stock/depositos` queda filtrado a `tipo = 'deposito'`.
+  - **Transferencias de Stock** (`/stock/transferencias`): mover existencias en cualquier dirección entre depósitos y puntos de venta, con formulario + listado de últimas transferencias y stock disponible en origen.
+  - **POS** (`/ventas/nueva`): selector de Punto de Venta obligatorio que recuerda la última elección en `localStorage` (el cajero trabaja un sector todo el turno). El stock se descuenta **del punto de venta**, no de un depósito fijo.
+  - **Ventas ↔ Tesorería**: cada venta genera un ingreso en la caja asociada al PdV (categoría `Ventas`, todos los métodos de pago). Primera relación venta→caja del sistema.
+  - **Listado de Ventas**: columna y filtro de Punto de Venta, incluido en exportación CSV/Excel.
+  - **Reportes de VENTAS**: filtro por Punto de Venta en mensual, diaria, gráfico de ventas, venta por ítem (además de columna en la tabla) y gráfico de ítems.
+  - **Movimientos de Stock**: nueva columna `deposito_destino_id` y columna "Destino" en la grilla; el filtro "Depósito" pasa a "Ubicación" y agrupa por tipo.
+  - **Inventario** (`/stock`): los grupos distinguen Depósito (azul) de Punto de Venta (verde) y el tipo se incluye en la exportación.
+  - **Pipeline de migración legacy** (`migration/migrate.py`): `mig_depositos` clasifica los depósitos legacy en depósito/punto de venta, `mig_ventas` asigna un PdV por defecto (el legacy `VentasCabecera` no tiene columna de sector) y `mig_movimientos_stock` deja de descartar `idDeposito_Destino`.
+
+### Changed
+
+- **RPCs atómicas reemplazan escrituras secuenciales** (migración `20260803000002`):
+  - `transferir_stock(...)` (SECURITY INVOKER): las dos patas del movimiento y los dos ajustes de inventario en una sola transacción, con orden de bloqueo determinístico para evitar deadlocks entre transferencias cruzadas. No bloquea por stock insuficiente: permite negativo y devuelve el saldo para avisar.
+  - `registrar_venta(...)` (SECURITY DEFINER, re-chequea `ventas:escribir`): cabecera, ítems, egreso de stock del PdV e ingreso en caja en una transacción. Reemplaza las 5–9 escrituras no transaccionales de `crearVenta`. Los **precios ahora los resuelve el servidor** desde `items_ventas` en vez de confiar en el payload del browser. Permite a un Recepcionista (sin permisos de stock/tesorería) causar esos efectos sin darle escritura amplia sobre esos módulos.
+  - `anular_venta(...)` (SECURITY DEFINER): **corrige una fuga de inventario preexistente** — la anulación sólo marcaba `anulada = true` y nunca restituía el stock. Ahora inserta contramovimientos de ingreso en la misma ubicación del egreso original y compensa el ingreso en caja con un egreso (categoría `Anulación de Ventas`, fechado `now()`, ledger append-only). Guard contra doble anulación.
+- **Zod del POS**: `nuevaVentaSchema` era código muerto (nadie lo importaba); ahora `crearVenta` lo parsea efectivamente. Incluye `punto_venta_id` y ya no lleva `precio_unitario`.
+- **Hardcodes de `'Deposito Central'` eliminados**: en `ventas/nueva/actions.ts` (ahora es el PdV elegido en el POS) y en `stock/items/actions.ts` (ahora es un selector de ubicación en el formulario, con fallback al primer depósito activo).
+- **RLS**: `select_depositos` permite a lectores de `ventas` ver los puntos de venta (no los depósitos internos); `select_cajas` permite a usuarios con `stock:escribir` listar cajas para el selector del ABM de PdV.
+- **Seeds**: `supabase/seed.sql` crea los dos puntos de venta; `supabase/seeds/demo_bonus.sql` asigna `punto_venta_id` a las 20 ventas demo y las reparte entre ambos PdV.
+- **Ajuste sobre datos reales** (migración `20260803000004`): la base productiva importada del legacy tiene un cuarto sector (`Arma Corta`) que `…000001` no contemplaba, y no tiene ninguna caja llamada `Caja Principal`. La migración reclasifica `Arma Corta` a `punto_venta` y vincula cada PdV con la caja de tesorería homónima. `Tiro Practico` queda sin caja (no existe una con ese nombre): registra ventas y descuenta stock, pero no genera movimiento de fondos hasta que se le asigne una.
+
+### Fixed
+
+- `stock/movimientos` — los filtros de Ítem/Ubicación/Tipo enviaban el centinela `"all"` como valor real a la query, rompiendo el filtrado.
+
+### Added
+
 - **Buscadores en todas las secciones con tablas/listas** — toda sección con tabla o lista ahora ofrece buscador o filtro por identificador y descripción (según corresponda):
   - Listas ABM/config (búsqueda cliente por nombre/descripción vía `DataTable onSearch` + `useMemo`): `socios/config/{categorias,tipo-cuotas,cobranzas}`, `actividades`, `actividades/extras`, `ventas/items`, `stock/{items,depositos}`, `tesoreria/cajas`, `tesoreria/config/categorias`, `security/roles` (nombre/descripción), `security/usuarios` (email/rol)
   - Tablas planas / agrupadas (buscador `Input` dedicado): `socios/grupos-familiares` (por titular), `socios/padron` (texto, junto al filtro de categoría existente), `stock` inventario (por ítem/unidad/depósito), `actividades/[id]` inscriptos (nro/apellido/nombre), `socios/[id]/cuotas` (período/tipo/método/estado), `socios/[id]/actividades` (actividad)

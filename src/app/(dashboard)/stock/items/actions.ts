@@ -2,7 +2,20 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import type { StockItem, StockItemFormData } from "@/types/stock";
+import type { Deposito, StockItem, StockItemFormData } from "@/types/stock";
+
+/** Ubicaciones donde se puede acreditar el stock inicial de un ítem nuevo */
+export async function getUbicacionesParaStockInicial(): Promise<Deposito[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("depositos")
+    .select("*")
+    .eq("activo", true)
+    .order("tipo")
+    .order("nombre");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Deposito[];
+}
 
 export async function getStockItems(): Promise<StockItem[]> {
   const supabase = createClient();
@@ -56,38 +69,52 @@ export async function createStockItem(formData: StockItemFormData) {
     throw new Error(error.message);
   }
 
-  // If stock_inicial > 0, create inventory + movement
+  // Si hay stock inicial, se acredita en la ubicación elegida en el form.
+  // Sin ubicación explícita cae al primer depósito activo (nunca a un
+  // punto de venta: el stock inicial es una compra que entra al almacén).
   if (formData.stock_inicial && formData.stock_inicial > 0) {
-    const { data: deposito } = await supabase
-      .from("depositos")
-      .select("id")
-      .eq("nombre", "Deposito Central")
-      .single();
+    let depositoId = formData.deposito_id ?? null;
 
-    if (deposito) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    if (!depositoId) {
+      const { data: fallback } = await supabase
+        .from("depositos")
+        .select("id")
+        .eq("tipo", "deposito")
+        .eq("activo", true)
+        .order("created_at")
+        .limit(1)
+        .maybeSingle();
+      depositoId = fallback?.id ?? null;
+    }
 
-      await supabase.from("stock_inventario").upsert(
-        {
-          item_id: item.id,
-          deposito_id: deposito.id,
-          cantidad: formData.stock_inicial,
-        },
-        { onConflict: "item_id,deposito_id" },
+    if (!depositoId) {
+      throw new Error(
+        "No hay ninguna ubicación donde acreditar el stock inicial",
       );
+    }
 
-      if (user) {
-        await supabase.from("movimientos_stock").insert({
-          item_id: item.id,
-          deposito_id: deposito.id,
-          tipo: "ingreso",
-          cantidad: formData.stock_inicial,
-          motivo: "Stock inicial",
-          usuario_id: user.id,
-        });
-      }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    await supabase.from("stock_inventario").upsert(
+      {
+        item_id: item.id,
+        deposito_id: depositoId,
+        cantidad: formData.stock_inicial,
+      },
+      { onConflict: "item_id,deposito_id" },
+    );
+
+    if (user) {
+      await supabase.from("movimientos_stock").insert({
+        item_id: item.id,
+        deposito_id: depositoId,
+        tipo: "ingreso",
+        cantidad: formData.stock_inicial,
+        motivo: "Stock inicial",
+        usuario_id: user.id,
+      });
     }
   }
 
