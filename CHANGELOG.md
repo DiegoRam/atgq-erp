@@ -8,6 +8,26 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Security
+
+Remediación del export de advisories de Sentinello del 2026-08-04 (41 hallazgos: 20 high, 19 moderate, 2 low). Estado final: **40 cerrados, 1 residual documentado**, más 1 hallazgo nuevo detectado y cerrado durante el trabajo. `npm audit` → `found 0 vulnerabilities`.
+
+- **Lockfiles unificados en npm.** El repo tenía `package-lock.json` versionado y `pnpm-lock.yaml` + `pnpm-workspace.yaml` sin versionar, con `node_modules` instalado por pnpm. Los dos lockfiles divergían y el escáner leyó ambos, que es por qué había hallazgos duplicados del mismo paquete en versiones distintas (`brace-expansion` #1/#21/#22 venían de npm, #2/#3 de pnpm). Se eliminan los artefactos de pnpm: `package-lock.json` es lo único que ve Vercel, así que el deploy no cambia de instalador.
+
+- **Transitivos refrescados dentro de sus rangos** (12 hallazgos, sin cambios de código ni overrides): `brace-expansion` 5.0.4→5.0.9 y 1.1.12→1.1.18, `flatted` 3.4.1→3.4.4, `js-yaml` 4.1.1→4.3.1, `picomatch` 4.0.3→4.0.5. `ws` (CVE-2026-48779, GHSA-58qx-3vcg-4xpx) desaparece del árbol al subir `@supabase/supabase-js` 2.99.1→2.112.0 dentro de `^2.99.1`, que sustituyó `ws` por `@supabase/phoenix`. Update quirúrgico y no `npm update` global: este último movía 142 paquetes incluyendo `recharts`, `react-hook-form`, `immer` y `zod`, cambios de runtime ajenos a seguridad.
+
+- **Next 14.2.35 → 15.5.22** (22 hallazgos: los 21 de `next` más `glob@10.3.10`). No hay parche en la línea 14.x — el dist-tag `next-14` es exactamente 14.2.35, así que el salto de major era obligatorio. Se elige 15.5.22 (tag `backport`) y no 16.x porque cubre el máximo exigido (15.5.21) con la mínima superficie: **React sigue en 18**, ya que `next@15.5.22` acepta `peerDependency react ^18.2.0`. `glob` se cierra por upgrade del padre, sin override: `@next/eslint-plugin-next@15.5.22` lo eliminó en favor de `fast-glob`. Migración de APIs async: `createClient()` pasa a `async` con `await cookies()` y se propaga el `await` a 137 call sites en 50 archivos (sólo los que importan de `@/lib/supabase/server`; el cliente de navegador y `createAdminClient()` no cambian); `params` pasa a `Promise` en `security/roles/[id]`.
+
+- **Override `postcss` → 8.5.23** (4 hallazgos). Único caso sin vía de padre: `next@15.5.22` pinnea `postcss: "8.4.31"` de forma exacta. Se usa 8.5.23 porque es la versión que `next@16.3.0` declara, o sea una combinación ya validada por los mantenedores de Next. Es dev-only (postcss sólo corre en build). Evidencia de no-regresión: el CSS generado es byte a byte idéntico al de 8.4.31.
+
+- **`xlsx` reemplazado por `write-excel-file` 4.1.1** (2 hallazgos high). Ni upgrade ni override eran posibles: las versiones del fix (0.19.3, 0.20.2) **no existen en npm** — SheetJS dejó de publicar en el registry a partir de 0.18.5 y sólo distribuye por su CDN. Sólo cambia `src/lib/export.ts`; la firma de `exportToExcel` se conserva y los 15 call sites no se tocan. Se preservan los tipos numéricos por celda (volcarlos como texto habría roto ordenamientos y sumas en Excel de forma silenciosa).
+
+- **Override `sharp` → 0.35.3** (GHSA-f88m-g3jw-g9cj, high). Hallazgo **nuevo**, no presente en el export: lo introdujo el propio upgrade a Next 15, que declara `sharp` como `optionalDependency ^0.34.3`. Se fuerza 0.35.3, la mínima que declara `next@16.3.0`. Verificado ejecutando la cadena exacta del optimizador de Next (`sharp().rotate().resize().toFormat().toBuffer()`) en jpeg, png, webp y avif.
+
+**Overrides y sus disparadores de retirada.** El proyecto no tenía ningún override antes de este trabajo. Los dos que se añaden quedan justificados en `package.json` bajo `overridesNotes` (JSON no admite comentarios). Ambos se retiran al migrar a Next 16.x, que ya trae `postcss >= 8.5.23` y `sharp >= 0.35.3`.
+
+**Residual abierto (1).** `eslint@8.57.1` (#23, moderate, `GHSA-p5wg-g6qr-c7cg` / CVE-2025-50537): es un **Withdrawn Advisory** retirado por GitHub, y su fix exige eslint 9, que obliga a migrar `.eslintrc.json` a flat config. `eslint-config-next@15.5.22` soporta eslint 8, así que no bloquea nada. Revisar si GitHub re-publica el advisory como vigente o cuando se toque el tooling de lint.
+
 ### Added
 
 - **P10.1** — Punto de Venta y transferencias de stock entre ubicaciones:
