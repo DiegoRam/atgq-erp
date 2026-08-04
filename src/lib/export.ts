@@ -51,6 +51,10 @@ export async function exportToExcel(
     await writeXlsxFile([headerRow, ...dataRows], {
       sheet: sheetName,
       columns,
+      // Obligatorio: write-excel-file lanza si una celda `Date` no tiene
+      // formato (propio o global). Hoy Supabase devuelve las fechas como
+      // strings ISO, pero sin esto un solo Date real romperia la exportacion.
+      dateFormat: "dd/mm/yyyy",
     }).toFile(`${filename}.xlsx`);
   } catch {
     throw new Error("Error al generar el archivo Excel");
