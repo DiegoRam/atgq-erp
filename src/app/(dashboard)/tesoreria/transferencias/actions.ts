@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { TransferenciaFormData, Caja, MovimientoFondo } from "@/types/tesoreria";
 
 export async function getCajasConSaldo(): Promise<Caja[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: cajas, error } = await supabase
     .from("cajas")
@@ -41,7 +41,7 @@ export async function getCajasConSaldo(): Promise<Caja[]> {
 }
 
 export async function realizarTransferencia(formData: TransferenciaFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   if (formData.caja_origen_id === formData.caja_destino_id) {
     throw new Error("La caja origen y destino deben ser diferentes");
@@ -122,7 +122,7 @@ export async function realizarTransferencia(formData: TransferenciaFormData) {
 }
 
 export async function getUltimasTransferencias(): Promise<MovimientoFondo[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("movimientos_fondos")
     .select(

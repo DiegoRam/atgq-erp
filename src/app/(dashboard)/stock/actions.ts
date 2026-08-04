@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { InventarioRow } from "@/types/stock";
 
 export async function getInventario(): Promise<InventarioRow[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("stock_inventario")

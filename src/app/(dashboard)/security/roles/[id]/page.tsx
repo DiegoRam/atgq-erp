@@ -9,11 +9,12 @@ import { ArrowLeft } from "lucide-react";
 export default async function RoleDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const [role, permisos] = await Promise.all([
-    getRoleById(params.id),
-    getRolePermisos(params.id),
+    getRoleById(id),
+    getRolePermisos(id),
   ]);
 
   return (

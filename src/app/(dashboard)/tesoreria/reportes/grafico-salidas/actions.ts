@@ -11,7 +11,7 @@ export async function getEgresosPorCategoria(params: {
   fecha_desde?: string;
   fecha_hasta?: string;
 }): Promise<EgresoPorCategoria[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("movimientos_fondos")

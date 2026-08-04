@@ -12,7 +12,7 @@ import type {
 } from "@/types/socios";
 
 export async function getSocios(params: SociosSearchParams) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { page, pageSize, search, categoria_ids, sort } = params;
 
   let query = supabase
@@ -79,14 +79,14 @@ export async function getSocios(params: SociosSearchParams) {
 }
 
 export async function getCategoryCounts(): Promise<CategoriaCount[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_category_counts");
   if (error) throw new Error(error.message);
   return (data ?? []) as CategoriaCount[];
 }
 
 export async function getCategorias(): Promise<CategoriaSocial[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("categorias_sociales")
     .select("*")
@@ -96,7 +96,7 @@ export async function getCategorias(): Promise<CategoriaSocial[]> {
 }
 
 export async function getMetodosCobranza(): Promise<MetodoCobranza[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("metodos_cobranza")
     .select("*")
@@ -107,7 +107,7 @@ export async function getMetodosCobranza(): Promise<MetodoCobranza[]> {
 }
 
 export async function getNextNroSocio(): Promise<number> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase
     .from("socios")
     .select("nro_socio")
@@ -121,7 +121,7 @@ export async function checkDniUnique(
   dni: string,
   excludeId?: string,
 ): Promise<boolean> {
-  const supabase = createClient();
+  const supabase = await createClient();
   let query = supabase
     .from("socios")
     .select("id")
@@ -135,7 +135,7 @@ export async function checkDniUnique(
 }
 
 export async function createSocio(formData: SocioFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("socios").insert({
     nro_socio: formData.nro_socio,
     apellido: formData.apellido,
@@ -153,7 +153,7 @@ export async function createSocio(formData: SocioFormData) {
 }
 
 export async function updateSocio(id: string, formData: SocioFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("socios")
     .update({

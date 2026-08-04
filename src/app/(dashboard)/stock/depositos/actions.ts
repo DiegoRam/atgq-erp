@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Deposito, DepositoFormData } from "@/types/stock";
 
 export async function getDepositos(): Promise<Deposito[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: depositos, error } = await supabase
     .from("depositos")
@@ -39,7 +39,7 @@ export async function getDepositos(): Promise<Deposito[]> {
 }
 
 export async function createDeposito(formData: DepositoFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("depositos").insert({
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
@@ -57,7 +57,7 @@ export async function createDeposito(formData: DepositoFormData) {
 }
 
 export async function updateDeposito(id: string, formData: DepositoFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // If deactivating, check no stock
   if (!formData.activo) {

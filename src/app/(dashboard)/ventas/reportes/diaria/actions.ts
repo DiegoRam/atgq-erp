@@ -13,7 +13,7 @@ export async function getVentasDiarias(
   mes: number,
   puntoVentaId?: string,
 ): Promise<VentaDiariaRow[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const mesStr = String(mes).padStart(2, "0");
   const desde = `${anio}-${mesStr}-01`;

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { GrupoFamiliar } from "@/types/socios";
 
 export async function getGruposFamiliares(): Promise<GrupoFamiliar[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: grupos, error } = await supabase
     .from("grupos_familiares")
@@ -33,7 +33,7 @@ export async function getGruposFamiliares(): Promise<GrupoFamiliar[]> {
 }
 
 export async function createGrupoFamiliar(titularId: string, miembroIds: string[]) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: grupo, error: gError } = await supabase
     .from("grupos_familiares")
@@ -56,7 +56,7 @@ export async function createGrupoFamiliar(titularId: string, miembroIds: string[
 }
 
 export async function addMiembroToGrupo(grupoId: string, socioId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("socios")
     .update({ grupo_familiar_id: grupoId })
@@ -66,7 +66,7 @@ export async function addMiembroToGrupo(grupoId: string, socioId: string) {
 }
 
 export async function removeMiembroFromGrupo(socioId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("socios")
     .update({ grupo_familiar_id: null })
@@ -76,7 +76,7 @@ export async function removeMiembroFromGrupo(socioId: string) {
 }
 
 export async function searchSocios(query: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("socios")
     .select("id,nro_socio,apellido,nombre")

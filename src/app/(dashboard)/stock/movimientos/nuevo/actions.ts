@@ -9,7 +9,7 @@ import type {
 } from "@/types/stock";
 
 export async function getDepositosActivos(): Promise<Deposito[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("depositos")
     .select("*")
@@ -20,7 +20,7 @@ export async function getDepositosActivos(): Promise<Deposito[]> {
 }
 
 export async function getStockItemsActivos(): Promise<StockItem[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("stock_items")
     .select("*")
@@ -34,7 +34,7 @@ export async function getStockActual(
   depositoId: string,
   itemId: string,
 ): Promise<number | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase
     .from("stock_inventario")
     .select("cantidad")
@@ -47,7 +47,7 @@ export async function getStockActual(
 export async function registrarMovimientoStock(
   formData: MovimientoStockFormData,
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

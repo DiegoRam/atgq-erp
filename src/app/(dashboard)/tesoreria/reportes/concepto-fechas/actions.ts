@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { CategoriaMovimiento, MovimientoFondo } from "@/types/tesoreria";
 
 export async function getCategoriasMovimientos(): Promise<CategoriaMovimiento[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("categorias_movimientos")
     .select("*")
@@ -20,7 +20,7 @@ export async function getMovimientosPorConcepto(params: {
   fecha_desde?: string;
   fecha_hasta?: string;
 }): Promise<MovimientoFondo[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("movimientos_fondos")

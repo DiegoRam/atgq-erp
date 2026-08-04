@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 export async function getPadron(categoriaId?: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Get BAJA category to exclude
   const { data: bajaCat } = await supabase

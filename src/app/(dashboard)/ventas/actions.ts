@@ -11,7 +11,7 @@ import type {
 
 /** Puntos de venta para el filtro del listado */
 export async function getPuntosVentaParaFiltro() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("depositos")
     .select("id, nombre")
@@ -22,7 +22,7 @@ export async function getPuntosVentaParaFiltro() {
 }
 
 export async function getVentas(params: VentasSearchParams) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { page, pageSize, fecha_desde, fecha_hasta, estado, punto_venta_id } =
     params;
 
@@ -76,7 +76,7 @@ export async function getVentas(params: VentasSearchParams) {
 export async function getVentaDetalle(
   ventaId: string,
 ): Promise<VentaItem[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("ventas_items")
     .select("*, item:items_ventas(id, nombre)")
@@ -91,7 +91,7 @@ export async function anularVenta(
   ventaId: string,
   motivo?: string,
 ): Promise<AnularVentaResult> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // RPC atómica: marca la venta, restituye el stock en el punto de venta
   // que registró el egreso y compensa el ingreso en caja con un egreso

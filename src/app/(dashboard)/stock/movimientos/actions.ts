@@ -11,7 +11,7 @@ import type {
 export async function getMovimientosStock(
   params: MovimientosStockSearchParams,
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { page, pageSize, item_id, deposito_id, tipo, fecha_desde, fecha_hasta } =
     params;
 
@@ -43,7 +43,7 @@ export async function getMovimientosStock(
 }
 
 export async function getItemsParaFiltro(): Promise<StockItem[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("stock_items")
     .select("*")
@@ -53,7 +53,7 @@ export async function getItemsParaFiltro(): Promise<StockItem[]> {
 }
 
 export async function getDepositosParaFiltro(): Promise<Deposito[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("depositos")
     .select("*")

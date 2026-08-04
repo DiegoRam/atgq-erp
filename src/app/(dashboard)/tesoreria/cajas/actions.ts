@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Caja, CajaFormData } from "@/types/tesoreria";
 
 export async function getCajas(): Promise<Caja[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: cajas, error } = await supabase
     .from("cajas")
@@ -46,7 +46,7 @@ export async function getCajas(): Promise<Caja[]> {
 }
 
 export async function createCaja(formData: CajaFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("cajas").insert({
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
@@ -63,7 +63,7 @@ export async function createCaja(formData: CajaFormData) {
 }
 
 export async function updateCaja(id: string, formData: CajaFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("cajas")
     .update({

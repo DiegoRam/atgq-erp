@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { MetodoCobranza, MetodoCobranzaFormData } from "@/types/socios";
 
 export async function getMetodosCobranza(): Promise<MetodoCobranza[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("metodos_cobranza")
     .select("*")
@@ -15,7 +15,7 @@ export async function getMetodosCobranza(): Promise<MetodoCobranza[]> {
 }
 
 export async function createMetodoCobranza(formData: MetodoCobranzaFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("No autorizado");
   const { error } = await supabase.from("metodos_cobranza").insert({
@@ -32,7 +32,7 @@ export async function createMetodoCobranza(formData: MetodoCobranzaFormData) {
 }
 
 export async function updateMetodoCobranza(id: string, formData: MetodoCobranzaFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("No autorizado");
 

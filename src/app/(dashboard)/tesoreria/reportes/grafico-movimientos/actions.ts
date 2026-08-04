@@ -11,7 +11,7 @@ interface IngresoMensual {
 export async function getIngresosMensuales(params: {
   caja_id?: string;
 }): Promise<IngresoMensual[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Get last 12 months of income data
   const doceAtras = new Date();
@@ -54,7 +54,7 @@ export async function getIngresosMensuales(params: {
 }
 
 export async function getCajasParaFiltro(): Promise<Caja[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("cajas")
     .select("*")

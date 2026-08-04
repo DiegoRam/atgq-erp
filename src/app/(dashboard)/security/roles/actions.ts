@@ -8,7 +8,7 @@ import { MODULOS } from "@/types/security";
 import type { RoleWithCount, PermisoModulo } from "@/types/security";
 
 async function requireAdmin() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

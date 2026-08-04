@@ -16,7 +16,7 @@ interface VentaPorItemRow {
 export async function getItemsVentasParaFiltro(): Promise<
   Pick<ItemVenta, "id" | "nombre">[]
 > {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("items_ventas")
     .select("id, nombre")
@@ -31,7 +31,7 @@ export async function getVentasPorItem(params: {
   fecha_hasta?: string;
   punto_venta_id?: string;
 }): Promise<VentaPorItemRow[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const query = supabase
     .from("ventas_items")

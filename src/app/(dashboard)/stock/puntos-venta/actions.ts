@@ -10,7 +10,7 @@ import type { Deposito, DepositoFormData } from "@/types/stock";
  * duplicar tablas ni FKs.
  */
 export async function getPuntosVenta(): Promise<Deposito[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: puntos, error } = await supabase
     .from("depositos")
@@ -44,7 +44,7 @@ export async function getPuntosVenta(): Promise<Deposito[]> {
 }
 
 export async function getCajasForSelect() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("cajas")
     .select("id, nombre")
@@ -55,7 +55,7 @@ export async function getCajasForSelect() {
 }
 
 export async function createPuntoVenta(formData: DepositoFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("depositos").insert({
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
@@ -74,7 +74,7 @@ export async function createPuntoVenta(formData: DepositoFormData) {
 }
 
 export async function updatePuntoVenta(id: string, formData: DepositoFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // No se puede desactivar un punto de venta con existencias
   if (!formData.activo) {

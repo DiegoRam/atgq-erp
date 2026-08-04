@@ -11,7 +11,7 @@ interface TurnosFilters {
 }
 
 export async function getTurnos(filters: TurnosFilters = {}): Promise<Turno[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("turnos")
@@ -35,7 +35,7 @@ export async function getTurnos(filters: TurnosFilters = {}): Promise<Turno[]> {
 }
 
 export async function getInstalacionesActivas(): Promise<Instalacion[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("instalaciones")
     .select("*")
@@ -46,7 +46,7 @@ export async function getInstalacionesActivas(): Promise<Instalacion[]> {
 }
 
 export async function getSociosForAutocomplete(search: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   if (!search || search.length < 2) return [];
 
   const isNumeric = /^\d+$/.test(search);
@@ -71,7 +71,7 @@ export async function getSociosForAutocomplete(search: string) {
 }
 
 export async function createTurno(formData: TurnoFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Validate overlap
   const { data: overlap } = await supabase
@@ -103,7 +103,7 @@ export async function createTurno(formData: TurnoFormData) {
 }
 
 export async function cancelarTurno(id: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("turnos")
     .update({ estado: "cancelado" })

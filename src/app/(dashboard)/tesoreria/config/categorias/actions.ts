@@ -8,7 +8,7 @@ import type {
 } from "@/types/tesoreria";
 
 export async function getCategorias(): Promise<CategoriaMovimiento[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("categorias_movimientos")
     .select("*")
@@ -19,7 +19,7 @@ export async function getCategorias(): Promise<CategoriaMovimiento[]> {
 }
 
 export async function createCategoria(formData: CategoriaMovimientoFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("categorias_movimientos").insert({
     nombre: formData.nombre,
     tipo: formData.tipo,
@@ -38,7 +38,7 @@ export async function updateCategoria(
   id: string,
   formData: CategoriaMovimientoFormData,
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("categorias_movimientos")
     .update({

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Actividad, ActividadFormData } from "@/types/actividades";
 
 export async function getActividades(): Promise<Actividad[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: actividades, error } = await supabase
     .from("actividades")
@@ -37,7 +37,7 @@ export async function getActividades(): Promise<Actividad[]> {
 }
 
 export async function getActividadById(id: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("actividades")
     .select("*")
@@ -48,7 +48,7 @@ export async function getActividadById(id: string) {
 }
 
 export async function getInscriptosByActividad(actividadId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("socios_actividades")
     .select("*, socio:socios(id, nro_socio, apellido, nombre)")
@@ -60,7 +60,7 @@ export async function getInscriptosByActividad(actividadId: string) {
 }
 
 export async function createActividad(formData: ActividadFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("actividades").insert({
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
@@ -77,7 +77,7 @@ export async function createActividad(formData: ActividadFormData) {
 }
 
 export async function updateActividad(id: string, formData: ActividadFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("actividades")
     .update({
