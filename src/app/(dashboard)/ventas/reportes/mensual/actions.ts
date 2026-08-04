@@ -13,7 +13,7 @@ export async function getVentasMensuales(
   anio: number,
   puntoVentaId?: string,
 ): Promise<VentaMensualRow[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("ventas")

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { SocioMoroso } from "@/types/socios";
 
 export async function getSociosMorosos(page: number, pageSize: number) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("get_socios_morosos", {
     p_page: page,
@@ -26,7 +26,7 @@ export async function getSociosMorosos(page: number, pageSize: number) {
 }
 
 export async function getAllMorosos(): Promise<SocioMoroso[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_socios_morosos", {
     p_page: 1,
     p_page_size: 100000,

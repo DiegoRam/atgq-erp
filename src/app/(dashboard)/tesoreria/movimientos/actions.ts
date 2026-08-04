@@ -9,7 +9,7 @@ import type {
 } from "@/types/tesoreria";
 
 export async function getMovimientos(params: MovimientosSearchParams) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { page, pageSize, caja_id, tipo, categoria_id, fecha_desde, fecha_hasta } =
     params;
 
@@ -68,7 +68,7 @@ export async function getMovimientos(params: MovimientosSearchParams) {
 }
 
 export async function getCajasParaFiltro(): Promise<Caja[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("cajas")
     .select("*")
@@ -78,7 +78,7 @@ export async function getCajasParaFiltro(): Promise<Caja[]> {
 }
 
 export async function getCategoriasParaFiltro(): Promise<CategoriaMovimiento[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("categorias_movimientos")
     .select("*")

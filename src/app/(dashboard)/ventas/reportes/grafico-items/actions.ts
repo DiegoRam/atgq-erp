@@ -12,7 +12,7 @@ export async function getTopItemsPorRevenue(params: {
   fecha_hasta?: string;
   punto_venta_id?: string;
 }): Promise<ItemRevenue[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Get all ventas_items with item name, filtering by venta date
   const query = supabase

@@ -12,7 +12,7 @@ import type { Deposito } from "@/types/stock";
 
 /** Sectores del club habilitados para vender */
 export async function getPuntosVentaActivos(): Promise<Deposito[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("depositos")
     .select("id, nombre, descripcion, activo, tipo, caja_id, created_at")
@@ -24,7 +24,7 @@ export async function getPuntosVentaActivos(): Promise<Deposito[]> {
 }
 
 export async function getItemsVentasActivos(): Promise<ItemVenta[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("items_ventas")
     .select("*, stock_item:stock_items(id, nombre)")
@@ -35,7 +35,7 @@ export async function getItemsVentasActivos(): Promise<ItemVenta[]> {
 }
 
 export async function getClientesForSelect() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("clientes")
     .select("id, apellido, nombre")
@@ -46,7 +46,7 @@ export async function getClientesForSelect() {
 }
 
 export async function getMetodosPago() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("metodos_cobranza")
     .select("id, nombre")
@@ -57,7 +57,7 @@ export async function getMetodosPago() {
 }
 
 export async function getSociosForAutocomplete(search: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   if (!search || search.length < 2) return [];
 
   const isNumeric = /^\d+$/.test(search);
@@ -84,7 +84,7 @@ export async function getSociosForAutocomplete(search: string) {
 export async function crearVenta(
   ventaData: NuevaVentaData,
 ): Promise<CrearVentaResult> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const parsed = nuevaVentaSchema.safeParse(ventaData);
   if (!parsed.success) throw new Error(parsed.error.issues[0].message);

@@ -15,7 +15,7 @@ export async function getSumarizacion(params: {
   fecha_hasta?: string;
   caja_id?: string;
 }): Promise<SumarizacionRow[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("movimientos_fondos")
@@ -53,7 +53,7 @@ export async function getSumarizacion(params: {
 }
 
 export async function getCajasParaFiltro(): Promise<Caja[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("cajas")
     .select("*")

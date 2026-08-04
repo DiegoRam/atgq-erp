@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { ActividadExtra, ActividadExtraFormData } from "@/types/actividades";
 
 export async function getActividadesExtras(): Promise<ActividadExtra[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("actividades_extras")
     .select("*")
@@ -15,7 +15,7 @@ export async function getActividadesExtras(): Promise<ActividadExtra[]> {
 }
 
 export async function createActividadExtra(formData: ActividadExtraFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("actividades_extras").insert({
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
@@ -27,7 +27,7 @@ export async function createActividadExtra(formData: ActividadExtraFormData) {
 }
 
 export async function updateActividadExtra(id: string, formData: ActividadExtraFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("actividades_extras")
     .update({

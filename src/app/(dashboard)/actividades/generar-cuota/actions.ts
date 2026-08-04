@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function getActividadesConInscriptos() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: actividades, error } = await supabase
     .from("actividades")
@@ -40,7 +40,7 @@ export async function getActividadesConInscriptos() {
 }
 
 export async function previewGeneracion(actividadId: string, periodo: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Count inscriptos activos
   const { count, error } = await supabase
@@ -70,7 +70,7 @@ export async function generarCuotaActividad(
   periodo: string,
   monto: number,
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // 1. Get tipo_cuota_id for 'Cuota Actividad'
   const { data: tipoCuota } = await supabase

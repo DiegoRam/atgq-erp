@@ -7,7 +7,7 @@ import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 
 export async function AppHeader() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { SocioActividad } from "@/types/actividades";
 
 export async function getActividadesBySocio(socioId: string): Promise<SocioActividad[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("socios_actividades")
     .select("*, actividad:actividades(id, nombre, monto_cuota)")
@@ -17,7 +17,7 @@ export async function getActividadesBySocio(socioId: string): Promise<SocioActiv
 }
 
 export async function getActividadesDisponibles() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("actividades")
     .select("id, nombre, monto_cuota")
@@ -28,7 +28,7 @@ export async function getActividadesDisponibles() {
 }
 
 export async function inscribirEnActividad(socioId: string, actividadId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Check if there's an existing (inactive) inscription to reactivate
   const { data: existing } = await supabase
@@ -61,7 +61,7 @@ export async function inscribirEnActividad(socioId: string, actividadId: string)
 }
 
 export async function darDeBaja(socioActividadId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("socios_actividades")
     .update({ activa: false })
@@ -72,7 +72,7 @@ export async function darDeBaja(socioActividadId: string) {
 }
 
 export async function getSocioById(socioId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("socios")
     .select("id, nro_socio, apellido, nombre")

@@ -12,7 +12,7 @@ interface DashboardData {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const now = new Date();
   const mesActualStart = new Date(now.getFullYear(), now.getMonth(), 1);

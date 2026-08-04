@@ -13,7 +13,7 @@ import type {
 
 /** Depósitos y puntos de venta activos: cualquiera puede ser origen o destino */
 export async function getUbicacionesActivas(): Promise<Deposito[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("depositos")
     .select("*")
@@ -25,7 +25,7 @@ export async function getUbicacionesActivas(): Promise<Deposito[]> {
 }
 
 export async function getStockItemsActivos(): Promise<StockItem[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("stock_items")
     .select("*")
@@ -39,7 +39,7 @@ export async function getStockItemsActivos(): Promise<StockItem[]> {
 export async function getStockPorUbicacion(
   itemId: string,
 ): Promise<Record<string, number>> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("stock_inventario")
     .select("deposito_id, cantidad")
@@ -54,7 +54,7 @@ export async function getStockPorUbicacion(
 }
 
 export async function transferirStock(formData: TransferenciaStockFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const parsed = transferenciaStockSchema.safeParse(formData);
   if (!parsed.success) throw new Error(parsed.error.issues[0].message);
@@ -93,7 +93,7 @@ export async function transferirStock(formData: TransferenciaStockFormData) {
 export async function getUltimasTransferenciasStock(): Promise<
   MovimientoStock[]
 > {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("movimientos_stock")
     .select(

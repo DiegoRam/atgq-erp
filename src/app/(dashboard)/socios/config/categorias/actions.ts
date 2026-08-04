@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { CategoriaSocial, CategoriaSocialFormData } from "@/types/socios";
 
 export async function getCategoriasSociales(): Promise<CategoriaSocial[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("categorias_sociales")
     .select("*")
@@ -15,7 +15,7 @@ export async function getCategoriasSociales(): Promise<CategoriaSocial[]> {
 }
 
 export async function createCategoriaSocial(formData: CategoriaSocialFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("No autorizado");
   const { error } = await supabase.from("categorias_sociales").insert({
@@ -34,7 +34,7 @@ export async function createCategoriaSocial(formData: CategoriaSocialFormData) {
 }
 
 export async function updateCategoriaSocial(id: string, formData: CategoriaSocialFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("No autorizado");
 

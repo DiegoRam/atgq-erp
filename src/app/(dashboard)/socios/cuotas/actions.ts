@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Cuota } from "@/types/socios";
 
 export async function getCuotasBySocio(socioId: string): Promise<Cuota[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("cuotas")
     .select("*, tipo_cuota:tipos_cuotas(id,nombre), metodo_pago:metodos_cobranza(id,nombre)")
@@ -19,7 +19,7 @@ export async function registrarPago(
   cuotaId: string,
   payload: { monto: number; fecha_pago: string; metodo_pago_id: string },
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("cuotas")
     .update({
@@ -37,7 +37,7 @@ export async function previewGeneracionMasiva(
   periodo: string,
   tipoCuotaId: string,
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Count active socios (no fecha_baja, not BAJA category)
   const bajaCatId = await getBajaCategoryId();
@@ -68,7 +68,7 @@ export async function previewGeneracionMasiva(
 }
 
 async function getBajaCategoryId(): Promise<string> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase
     .from("categorias_sociales")
     .select("id")
@@ -82,7 +82,7 @@ export async function generarCuotasMasivas(
   tipoCuotaId: string,
   monto: number,
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const bajaCatId = await getBajaCategoryId();
 
@@ -117,7 +117,7 @@ export async function generarCuotasMasivas(
 }
 
 export async function getTiposCuotas() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("tipos_cuotas")
     .select("*")
@@ -128,7 +128,7 @@ export async function getTiposCuotas() {
 }
 
 export async function getSocioById(socioId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("socios")
     .select("id,nro_socio,apellido,nombre")

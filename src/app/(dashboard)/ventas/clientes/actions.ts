@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Cliente, ClienteFormData } from "@/types/ventas";
 
 export async function getClientes(search?: string): Promise<Cliente[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("clientes")
@@ -49,7 +49,7 @@ export async function getClientes(search?: string): Promise<Cliente[]> {
 }
 
 export async function createCliente(formData: ClienteFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("clientes").insert({
     apellido: formData.apellido,
     nombre: formData.nombre,
@@ -68,7 +68,7 @@ export async function createCliente(formData: ClienteFormData) {
 }
 
 export async function updateCliente(id: string, formData: ClienteFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("clientes")
     .update({

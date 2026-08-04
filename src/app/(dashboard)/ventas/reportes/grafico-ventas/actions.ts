@@ -10,7 +10,7 @@ interface VentaMensualChart {
 export async function getVentasMensualesChart(
   puntoVentaId?: string,
 ): Promise<VentaMensualChart[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const doceAtras = new Date();
   doceAtras.setMonth(doceAtras.getMonth() - 12);

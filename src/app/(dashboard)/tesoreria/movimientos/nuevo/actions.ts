@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { MovimientoFormData, Caja, CategoriaMovimiento } from "@/types/tesoreria";
 
 export async function getCajasActivas(): Promise<Caja[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("cajas")
     .select("*")
@@ -16,7 +16,7 @@ export async function getCajasActivas(): Promise<Caja[]> {
 }
 
 export async function getCategoriasActivas(): Promise<CategoriaMovimiento[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("categorias_movimientos")
     .select("*")
@@ -27,7 +27,7 @@ export async function getCategoriasActivas(): Promise<CategoriaMovimiento[]> {
 }
 
 export async function ingresarMovimiento(formData: MovimientoFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Get authenticated user
   const {

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function inscribirSocio(actividadId: string, socioId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Check if there's an existing (inactive) inscription to reactivate
   const { data: existing } = await supabase
@@ -37,7 +37,7 @@ export async function inscribirSocio(actividadId: string, socioId: string) {
 }
 
 export async function darDeBajaSocio(socioActividadId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("socios_actividades")
     .update({ activa: false })
@@ -47,7 +47,7 @@ export async function darDeBajaSocio(socioActividadId: string) {
 }
 
 export async function getSociosForAutocomplete(search: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   if (!search || search.length < 2) return [];
 
   const isNumeric = /^\d+$/.test(search);

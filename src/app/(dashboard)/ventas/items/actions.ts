@@ -6,7 +6,7 @@ import type { ItemVenta, ItemVentaFormData } from "@/types/ventas";
 import type { StockItem } from "@/types/stock";
 
 export async function getItemsVentas(): Promise<ItemVenta[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("items_ventas")
     .select("*, stock_item:stock_items(id, nombre)")
@@ -17,7 +17,7 @@ export async function getItemsVentas(): Promise<ItemVenta[]> {
 }
 
 export async function getStockItemsForSelect(): Promise<StockItem[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("stock_items")
     .select("*")
@@ -28,7 +28,7 @@ export async function getStockItemsForSelect(): Promise<StockItem[]> {
 }
 
 export async function createItemVenta(formData: ItemVentaFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("items_ventas").insert({
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
@@ -47,7 +47,7 @@ export async function createItemVenta(formData: ItemVentaFormData) {
 }
 
 export async function updateItemVenta(id: string, formData: ItemVentaFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("items_ventas")
     .update({

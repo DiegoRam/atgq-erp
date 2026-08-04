@@ -6,7 +6,7 @@ import type { Deposito, StockItem, StockItemFormData } from "@/types/stock";
 
 /** Ubicaciones donde se puede acreditar el stock inicial de un ítem nuevo */
 export async function getUbicacionesParaStockInicial(): Promise<Deposito[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("depositos")
     .select("*")
@@ -18,7 +18,7 @@ export async function getUbicacionesParaStockInicial(): Promise<Deposito[]> {
 }
 
 export async function getStockItems(): Promise<StockItem[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: items, error } = await supabase
     .from("stock_items")
@@ -49,7 +49,7 @@ export async function getStockItems(): Promise<StockItem[]> {
 }
 
 export async function createStockItem(formData: StockItemFormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: item, error } = await supabase
     .from("stock_items")
@@ -126,7 +126,7 @@ export async function updateStockItem(
   id: string,
   formData: Omit<StockItemFormData, "stock_inicial">,
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("stock_items")
     .update({
