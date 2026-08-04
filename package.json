@@ -62,6 +62,12 @@
     "postcss": "$postcss",
     "sharp": "0.35.3"
   },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.23",
+      "sharp": "0.35.3"
+    }
+  },
   "overridesNotes": {
     "postcss": {
       "razon": "next@15.5.22 pinnea postcss 8.4.31 de forma exacta (no un rango), asi que subir el padre no mueve el hijo. Cierra GHSA-6g55-p6wh-862q, GHSA-r28c-9q8g-f849, GHSA-fxqj-rqcc-2cmp y GHSA-qx2v-qp2m-jg93.",
