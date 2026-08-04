@@ -1,3 +1,23 @@
+import type { Cell, Row } from "write-excel-file/browser";
+
+/**
+ * Convierte un valor crudo en una celda de write-excel-file preservando su
+ * tipo. Es importante NO pasar todo como texto: xlsx conservaba los números
+ * como números, y volcarlos como string rompería ordenamientos y sumas al
+ * abrir el archivo en Excel.
+ */
+function toCell(value: unknown): Cell {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value)
+      ? { value, type: Number }
+      : { value: String(value), type: String };
+  }
+  if (typeof value === "boolean") return { value, type: Boolean };
+  if (value instanceof Date) return { value, type: Date };
+  return { value: String(value), type: String };
+}
+
 export async function exportToExcel(
   data: Record<string, unknown>[],
   filename: string,
@@ -5,30 +25,33 @@ export async function exportToExcel(
   headers: { key: string; label: string }[],
 ): Promise<void> {
   try {
-    const XLSX = await import("xlsx");
+    const { default: writeXlsxFile } = await import(
+      "write-excel-file/browser"
+    );
 
-    const rows = data.map((row) => {
-      const obj: Record<string, unknown> = {};
-      for (const h of headers) {
-        obj[h.label] = row[h.key] ?? "";
-      }
-      return obj;
-    });
+    const headerRow: Row = headers.map((h) => ({
+      value: h.label,
+      type: String,
+      fontWeight: "bold" as const,
+    }));
 
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const dataRows: Row[] = data.map((row) =>
+      headers.map((h) => toCell(row[h.key])),
+    );
 
-    // Auto column widths
-    ws["!cols"] = headers.map((h) => ({
-      wch: Math.max(
+    // Auto column widths (en caracteres, misma unidad que el `wch` de xlsx)
+    const columns = headers.map((h) => ({
+      width: Math.max(
         h.label.length,
-        ...rows.map((r) => String(r[h.label] ?? "").length),
+        ...data.map((r) => String(r[h.key] ?? "").length),
         10,
       ),
     }));
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    XLSX.writeFile(wb, `${filename}.xlsx`);
+    await writeXlsxFile([headerRow, ...dataRows], {
+      sheet: sheetName,
+      columns,
+    }).toFile(`${filename}.xlsx`);
   } catch {
     throw new Error("Error al generar el archivo Excel");
   }
