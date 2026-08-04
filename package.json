@@ -53,9 +53,21 @@
     "eslint": "^8",
     "eslint-config-next": "15.5.22",
     "eslint-config-prettier": "^10.1.8",
-    "postcss": "^8",
+    "postcss": "8.5.23",
     "prettier": "^3.8.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "$postcss"
+  },
+  "overridesNotes": {
+    "postcss": {
+      "razon": "next@15.5.22 pinnea postcss 8.4.31 de forma exacta (no un rango), asi que subir el padre no mueve el hijo. Cierra GHSA-6g55-p6wh-862q, GHSA-r28c-9q8g-f849, GHSA-fxqj-rqcc-2cmp y GHSA-qx2v-qp2m-jg93.",
+      "porQueNoUpgradeDelPadre": "next@16.3.0 SI resuelve postcss 8.5.23 y cerraria los 4 advisories sin override, pero se descarto el salto a 16.x: exige React 19 y son dos majors de golpe, mucho mas riesgo que el que cubren estos hallazgos dev-only.",
+      "porQue8_5_23": "Es exactamente la version que next@16.3.0 declara, es decir una combinacion que los mantenedores de Next ya validan contra el Next actual, y satisface el techo de los 4 advisories (el mas exigente pide >=8.5.23).",
+      "riesgoDeRotura": "8.4.31 -> 8.5.23 es un salto minor, aditivo por semver. postcss es dev-only: solo corre en build (CSS Modules + Tailwind), nunca en el runtime que atiende requests. El repo ya declaraba postcss ^8 y resolvia a 8.5.x en la raiz sin problemas.",
+      "triggerDeRetirada": "Eliminar este override cuando el proyecto migre a Next 16.x (que ya trae postcss >=8.5.23), o cuando `npm view next@<version-en-uso> dependencies.postcss` devuelva >=8.5.23."
+    }
   }
 }
