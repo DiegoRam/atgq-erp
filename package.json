@@ -59,7 +59,8 @@
     "typescript": "^5"
   },
   "overrides": {
-    "postcss": "$postcss"
+    "postcss": "$postcss",
+    "sharp": "0.35.3"
   },
   "overridesNotes": {
     "postcss": {
@@ -68,6 +69,13 @@
       "porQue8_5_23": "Es exactamente la version que next@16.3.0 declara, es decir una combinacion que los mantenedores de Next ya validan contra el Next actual, y satisface el techo de los 4 advisories (el mas exigente pide >=8.5.23).",
       "riesgoDeRotura": "8.4.31 -> 8.5.23 es un salto minor, aditivo por semver. postcss es dev-only: solo corre en build (CSS Modules + Tailwind), nunca en el runtime que atiende requests. El repo ya declaraba postcss ^8 y resolvia a 8.5.x en la raiz sin problemas.",
       "triggerDeRetirada": "Eliminar este override cuando el proyecto migre a Next 16.x (que ya trae postcss >=8.5.23), o cuando `npm view next@<version-en-uso> dependencies.postcss` devuelva >=8.5.23."
+    },
+    "sharp": {
+      "razon": "GHSA-f88m-g3jw-g9cj: sharp <0.35.0 hereda vulnerabilidades de libvips (CVE-2026-33327/33328/35590/35591). No estaba en el arbol con Next 14; lo introdujo el upgrade a Next 15.5.22, que lo declara como optionalDependency ^0.34.3 y resuelve 0.34.5.",
+      "porQueNoUpgradeDelPadre": "El rango ^0.34.3 de next@15.5.22 no admite 0.35.x, asi que ninguna re-resolucion lo alcanza. next@16.3.0 declara sharp ^0.35.3 y lo cerraria sin override, pero se descarto el salto a 16.x por exigir React 19.",
+      "porQue0_35_3": "Es exactamente la version que next@16.3.0 declara como minima, o sea la que los mantenedores de Next ya validan contra su optimizador de imagenes. Publicada 2026-07-01, madura.",
+      "riesgoDeRotura": "El optimizador de Next 15 (dist/server/image-optimizer.js) solo usa el subconjunto estable de la API: sharp(), .resize(), .rotate(), .jpeg(), .png(), .webp(), .avif(), .toBuffer(); ninguna cambia entre 0.34 y 0.35. OJO: sharp 0.35 sube el minimo de Node de ^18.17 a >=20.9, igual que hace Next 16.",
+      "triggerDeRetirada": "Eliminar este override cuando el proyecto migre a Next 16.x (que ya trae sharp >=0.35.3), o cuando `npm view next@<version-en-uso> optionalDependencies.sharp` admita >=0.35.0."
     }
   }
 }
