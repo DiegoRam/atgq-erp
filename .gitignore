@@ -42,3 +42,13 @@ tsconfig.tsbuildinfo
 
 # Backup legacy (245MB, datos personales de socios) — nunca commitear
 docs/backup.sql
+
+# pnpm — el proyecto usa npm: package-lock.json es la fuente de verdad y lo
+# único que ve Vercel. Estos archivos reaparecen si alguien corre pnpm, y
+# tener dos lockfiles en paralelo hace que diverjan (ver CHANGELOG, sección
+# Security de [Unreleased]). Además pnpm ignora el campo `overrides` de npm,
+# así que un pnpm-lock.yaml versionado puede reintroducir vulnerabilidades ya
+# cerradas. Si algún día se migra a pnpm, quitar estas líneas y borrar
+# package-lock.json — pero no mantener los dos.
+pnpm-lock.yaml
+pnpm-workspace.yaml
