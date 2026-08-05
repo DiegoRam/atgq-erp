@@ -80,7 +80,7 @@ export function RolForm({ open, onOpenChange, role, onSaved }: RolFormProps) {
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 

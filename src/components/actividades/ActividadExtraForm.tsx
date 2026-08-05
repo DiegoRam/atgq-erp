@@ -95,7 +95,7 @@ export function ActividadExtraForm({
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -118,7 +118,7 @@ export function ActividadExtraForm({
             {...register("monto", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
           />
           {errors.monto && (
-            <p className="text-xs text-red-500">{errors.monto.message}</p>
+            <p className="text-xs text-destructive">{errors.monto.message}</p>
           )}
         </div>
       </div>

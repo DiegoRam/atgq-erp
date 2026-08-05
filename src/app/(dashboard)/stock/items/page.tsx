@@ -35,9 +35,9 @@ const columns: ColumnDef<StockItem>[] = [
       const total = row.original.stock_total ?? 0;
       const color =
         total <= 0
-          ? "text-red-600 font-bold"
+          ? "text-destructive font-bold"
           : total <= 10
-            ? "text-orange-600 font-semibold"
+            ? "text-warning font-semibold"
             : "";
       return <span className={color}>{total}</span>;
     },

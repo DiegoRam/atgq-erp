@@ -34,7 +34,7 @@ export function WorkspaceTabs() {
   if (tabs.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-0.5 overflow-x-auto border-b bg-slate-100 px-2 py-1">
+    <div className="flex items-center gap-0.5 overflow-x-auto border-b bg-muted px-2 py-1">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         const Icon = isReportTab(tab.href) ? BarChart3 : Table2;
@@ -45,8 +45,8 @@ export function WorkspaceTabs() {
             className={cn(
               "group flex cursor-pointer items-center gap-1.5 rounded-t px-3 py-1.5 text-xs transition-colors",
               isActive
-                ? "border border-b-0 bg-white font-medium text-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-slate-200",
+                ? "border border-b-0 bg-background font-medium text-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
             onClick={() => {
               setActive(tab.id);
@@ -56,7 +56,7 @@ export function WorkspaceTabs() {
             <Icon className="h-3.5 w-3.5 shrink-0" />
             <span className="max-w-[160px] truncate">{tab.label}</span>
             <button
-              className="ml-1 rounded p-0.5 opacity-0 transition-opacity hover:bg-slate-300 group-hover:opacity-100"
+              className="ml-1 rounded p-0.5 opacity-0 transition-opacity hover:bg-muted-foreground/20 group-hover:opacity-100"
               onClick={(e) => {
                 e.stopPropagation();
                 const { tabs: currentTabs, activeTabId: currentActive } =

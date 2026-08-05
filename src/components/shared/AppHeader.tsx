@@ -5,6 +5,7 @@ import Image from "next/image";
 import { LogOut } from "lucide-react";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "./ThemeToggle";
 
 export async function AppHeader() {
   const supabase = await createClient();
@@ -39,6 +40,7 @@ export async function AppHeader() {
           <p className="hidden sm:block">Usuario: {user?.email ?? "—"}</p>
           <p className="text-xs text-slate-300">{today}</p>
         </div>
+        <ThemeToggle className="text-slate-300 hover:bg-slate-700 hover:text-white" />
         <form action={logout}>
           <Button
             variant="ghost"

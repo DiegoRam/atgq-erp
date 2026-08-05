@@ -86,7 +86,7 @@ Si no hay `psql`/DB password a mano, envolver cada archivo como una migración t
 
 - Match the surrounding code: server components fetch, `"use server"` actions are colocated as `actions.ts`, forms use react-hook-form + `zodResolver` + `sonner` toasts, Spanish UI copy, `cn()` for classes, lucide-react icons.
 - Task IDs (P1.1…P9.3) appear in commit messages; update `PROGRESS.md` and `CHANGELOG.md` when completing plan tasks.
-- Known systemic tech-debt (authz gaps in module actions, no server-side Zod validation, non-atomic multi-writes, the "Todos" filter-Select bug, duplicate-cuota generation, hardcoded name lookups, `next-themes` not wired) is catalogued in the agent memory notes — check current code before asserting any specific instance.
+- Known systemic tech-debt (authz gaps in module actions, no server-side Zod validation, non-atomic multi-writes, the "Todos" filter-Select bug, duplicate-cuota generation, hardcoded name lookups) is catalogued in the agent memory notes — check current code before asserting any specific instance.
 
 ## Legacy System Modules (reference, from screenshots)
 

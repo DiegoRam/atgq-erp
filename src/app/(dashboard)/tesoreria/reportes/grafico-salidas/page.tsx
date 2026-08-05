@@ -26,6 +26,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { getEgresosPorCategoria } from "./actions";
+import {
+  chartGrid,
+  chartAxis,
+  chartTooltip,
+  chartCursorBar,
+  CHART_COLORS,
+} from "@/lib/chart-theme";
 
 interface EgresoPorCategoria {
   categoria: string;
@@ -88,15 +95,16 @@ export default function GraficoSalidasPage() {
         data.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid {...chartGrid} />
               <XAxis
                 dataKey="categoria"
-                fontSize={12}
+                {...chartAxis}
                 angle={-30}
                 textAnchor="end"
                 height={80}
               />
               <YAxis
+                {...chartAxis}
                 tickFormatter={(v) =>
                   new Intl.NumberFormat("es-AR", {
                     notation: "compact",
@@ -105,9 +113,11 @@ export default function GraficoSalidasPage() {
                 }
               />
               <Tooltip
+                {...chartTooltip}
+                cursor={chartCursorBar}
                 formatter={(value) => [formatCurrency(Number(value)), "Egresos"]}
               />
-              <Bar dataKey="total" fill="#ef4444" />
+              <Bar dataKey="total" fill={CHART_COLORS[3]} />
             </BarChart>
           </ResponsiveContainer>
         ) : undefined

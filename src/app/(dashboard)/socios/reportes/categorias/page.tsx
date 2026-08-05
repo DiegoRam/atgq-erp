@@ -21,6 +21,13 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSociosPorCategoria } from "./actions";
+import {
+  chartGrid,
+  chartAxis,
+  chartTooltip,
+  chartCursorBar,
+  CHART_COLORS,
+} from "@/lib/chart-theme";
 
 export default function ReportCategoriasPage() {
   const [data, setData] = useState<{ categoria: string; cantidad: number }[]>([]);
@@ -43,11 +50,17 @@ export default function ReportCategoriasPage() {
         data.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data.filter((d) => d.categoria !== "BAJA")}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="categoria" fontSize={12} angle={-30} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="cantidad" fill="#3b82f6" />
+              <CartesianGrid {...chartGrid} />
+              <XAxis
+                dataKey="categoria"
+                {...chartAxis}
+                angle={-30}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis {...chartAxis} />
+              <Tooltip {...chartTooltip} cursor={chartCursorBar} />
+              <Bar dataKey="cantidad" fill={CHART_COLORS[2]} />
             </BarChart>
           </ResponsiveContainer>
         ) : undefined

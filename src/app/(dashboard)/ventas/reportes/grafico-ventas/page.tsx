@@ -27,6 +27,14 @@ import {
   pdvFiltro,
 } from "@/components/ventas/PuntoVentaFilter";
 import { getVentasMensualesChart } from "./actions";
+import {
+  chartGrid,
+  chartAxis,
+  chartTooltip,
+  chartCursorLine,
+  chartActiveDot,
+  CHART_COLORS,
+} from "@/lib/chart-theme";
 
 interface VentaMensualChart {
   mes: string;
@@ -55,15 +63,16 @@ export default function GraficoVentasPage() {
         data.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid {...chartGrid} />
               <XAxis
                 dataKey="mes"
-                fontSize={12}
+                {...chartAxis}
                 angle={-30}
                 textAnchor="end"
                 height={80}
               />
               <YAxis
+                {...chartAxis}
                 tickFormatter={(v) =>
                   new Intl.NumberFormat("es-AR", {
                     notation: "compact",
@@ -72,14 +81,17 @@ export default function GraficoVentasPage() {
                 }
               />
               <Tooltip
+                {...chartTooltip}
+                cursor={chartCursorLine}
                 formatter={(value) => [formatCurrency(Number(value)), "Ventas"]}
               />
               <Line
                 type="monotone"
                 dataKey="total"
-                stroke="#3b82f6"
+                stroke={CHART_COLORS[2]}
                 strokeWidth={2}
-                dot={{ fill: "#3b82f6" }}
+                dot={{ fill: CHART_COLORS[2] }}
+                activeDot={chartActiveDot}
               />
             </LineChart>
           </ResponsiveContainer>

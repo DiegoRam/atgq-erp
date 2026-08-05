@@ -105,11 +105,11 @@ const columns: ColumnDef<Venta>[] = [
     header: "Estado",
     cell: ({ row }) =>
       row.original.anulada ? (
-        <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+        <Badge className="border-transparent bg-destructive/15 text-destructive hover:bg-destructive/15">
           Anulada
         </Badge>
       ) : (
-        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+        <Badge className="border-transparent bg-success/15 text-success hover:bg-success/15">
           Activa
         </Badge>
       ),
@@ -139,7 +139,7 @@ const columns: ColumnDef<Venta>[] = [
               onClick={() => meta?.onAnular?.(row.original)}
               title="Anular"
             >
-              <XCircle className="h-4 w-4 text-red-500" />
+              <XCircle className="h-4 w-4 text-destructive" />
             </Button>
           )}
         </div>
@@ -390,7 +390,7 @@ export default function VentasRealizadasPage() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmAnular}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Anular
             </AlertDialogAction>

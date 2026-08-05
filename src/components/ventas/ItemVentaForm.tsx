@@ -126,7 +126,7 @@ export function ItemVentaForm({
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -144,7 +144,7 @@ export function ItemVentaForm({
             {...register("precio", { valueAsNumber: true })}
           />
           {errors.precio && (
-            <p className="text-xs text-red-500">{errors.precio.message}</p>
+            <p className="text-xs text-destructive">{errors.precio.message}</p>
           )}
         </div>
 

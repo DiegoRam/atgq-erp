@@ -30,6 +30,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
 import { getIngresosMensuales, getCajasParaFiltro } from "./actions";
+import {
+  chartGrid,
+  chartAxis,
+  chartTooltip,
+  chartCursorLine,
+  chartActiveDot,
+  CHART_COLORS,
+} from "@/lib/chart-theme";
 import type { Caja } from "@/types/tesoreria";
 
 interface IngresoMensual {
@@ -79,9 +87,16 @@ export default function GraficoMovimientosPage() {
         data.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="mes" fontSize={12} angle={-30} textAnchor="end" height={80} />
+              <CartesianGrid {...chartGrid} />
+              <XAxis
+                dataKey="mes"
+                {...chartAxis}
+                angle={-30}
+                textAnchor="end"
+                height={80}
+              />
               <YAxis
+                {...chartAxis}
                 tickFormatter={(v) =>
                   new Intl.NumberFormat("es-AR", {
                     notation: "compact",
@@ -90,14 +105,17 @@ export default function GraficoMovimientosPage() {
                 }
               />
               <Tooltip
+                {...chartTooltip}
+                cursor={chartCursorLine}
                 formatter={(value) => [formatCurrency(Number(value)), "Ingresos"]}
               />
               <Line
                 type="monotone"
                 dataKey="total"
-                stroke="#22c55e"
+                stroke={CHART_COLORS[1]}
                 strokeWidth={2}
-                dot={{ fill: "#22c55e" }}
+                dot={{ fill: CHART_COLORS[1] }}
+                activeDot={chartActiveDot}
               />
             </LineChart>
           </ResponsiveContainer>

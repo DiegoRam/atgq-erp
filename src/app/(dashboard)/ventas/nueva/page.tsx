@@ -279,7 +279,7 @@ export default function NuevaVentaPage() {
                 </SelectContent>
               </Select>
               {puntosVenta.length === 0 && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   No hay puntos de venta activos. Cree uno en Stock &rarr;
                   Puntos de Venta.
                 </p>
@@ -398,7 +398,7 @@ export default function NuevaVentaPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-green-600" />
+              <Check className="h-5 w-5 text-success" />
               Venta registrada exitosamente
             </AlertDialogTitle>
             <AlertDialogDescription>

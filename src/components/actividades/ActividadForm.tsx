@@ -100,7 +100,7 @@ export function ActividadForm({
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -118,7 +118,7 @@ export function ActividadForm({
             {...register("monto_cuota", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
           />
           {errors.monto_cuota && (
-            <p className="text-xs text-red-500">{errors.monto_cuota.message}</p>
+            <p className="text-xs text-destructive">{errors.monto_cuota.message}</p>
           )}
         </div>
 

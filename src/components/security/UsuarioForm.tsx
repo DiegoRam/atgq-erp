@@ -126,7 +126,7 @@ export function UsuarioForm({
                 {...createForm.register("email")}
               />
               {createForm.formState.errors.email && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   {createForm.formState.errors.email.message}
                 </p>
               )}
@@ -140,7 +140,7 @@ export function UsuarioForm({
                 {...createForm.register("password")}
               />
               {createForm.formState.errors.password && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   {createForm.formState.errors.password.message}
                 </p>
               )}
@@ -172,7 +172,7 @@ export function UsuarioForm({
           {(isEditing
             ? editForm.formState.errors.rol_id
             : createForm.formState.errors.rol_id) && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-destructive">
               {isEditing
                 ? editForm.formState.errors.rol_id?.message
                 : createForm.formState.errors.rol_id?.message}

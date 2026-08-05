@@ -143,8 +143,8 @@ export default function SumarizacionPage() {
                       <Badge
                         className={
                           d.tipo === "ingreso"
-                            ? "bg-green-100 text-green-800 hover:bg-green-100"
-                            : "bg-red-100 text-red-800 hover:bg-red-100"
+                            ? "border-transparent bg-success/15 text-success hover:bg-success/15"
+                            : "border-transparent bg-destructive/15 text-destructive hover:bg-destructive/15"
                         }
                       >
                         {d.tipo === "ingreso" ? "Ingreso" : "Egreso"}

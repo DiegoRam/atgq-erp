@@ -165,7 +165,7 @@ export default function GruposFamiliaresPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                  className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleRemoveMiembro(m.id);

@@ -33,7 +33,7 @@ const columns: ColumnDef<Caja>[] = [
       const saldo = row.original.saldo_actual ?? 0;
       return (
         <span
-          className={`font-semibold ${saldo >= 0 ? "text-green-700" : "text-red-600"}`}
+          className={`font-semibold ${saldo >= 0 ? "text-success" : "text-destructive"}`}
         >
           {formatCurrency(saldo)}
         </span>

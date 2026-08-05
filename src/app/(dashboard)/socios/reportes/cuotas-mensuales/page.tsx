@@ -25,6 +25,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
 import { getCuotasMensuales } from "./actions";
+import {
+  chartGrid,
+  chartAxis,
+  chartTooltip,
+  chartCursorLine,
+  chartActiveDot,
+  CHART_COLORS,
+} from "@/lib/chart-theme";
 
 export default function ReportCuotasMensualesPage() {
   const currentYear = new Date().getFullYear();
@@ -75,11 +83,17 @@ export default function ReportCuotasMensualesPage() {
         data.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="mes" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="monto" stroke="#10b981" strokeWidth={2} />
+              <CartesianGrid {...chartGrid} />
+              <XAxis dataKey="mes" {...chartAxis} />
+              <YAxis {...chartAxis} />
+              <Tooltip {...chartTooltip} cursor={chartCursorLine} />
+              <Line
+                type="monotone"
+                dataKey="monto"
+                stroke={CHART_COLORS[1]}
+                strokeWidth={2}
+                activeDot={chartActiveDot}
+              />
             </LineChart>
           </ResponsiveContainer>
         ) : undefined

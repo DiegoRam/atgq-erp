@@ -80,9 +80,9 @@ const columns: ColumnDef<UsuarioSistema>[] = [
             title={isBanned ? "Activar" : "Desactivar"}
           >
             {isBanned ? (
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-success" />
             ) : (
-              <Ban className="h-4 w-4 text-red-600" />
+              <Ban className="h-4 w-4 text-destructive" />
             )}
           </Button>
         </div>
