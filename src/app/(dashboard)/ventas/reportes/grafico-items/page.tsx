@@ -31,6 +31,17 @@ import {
   pdvFiltro,
 } from "@/components/ventas/PuntoVentaFilter";
 import { getTopItemsPorRevenue } from "./actions";
+import {
+  chartGrid,
+  chartAxis,
+  chartTooltip,
+  chartCursorBar,
+  CHART_COLORS,
+} from "@/lib/chart-theme";
+
+// A nivel de módulo, no inline: `XAxis`/`YAxis` son `React.memo` con comparación
+// superficial, así que un objeto `tick` nuevo en cada render rompe la memoización.
+const yAxisTick = { ...chartAxis.tick, fontSize: 11 };
 
 interface ItemRevenue {
   nombre: string;
@@ -96,9 +107,10 @@ export default function GraficoItemsPage() {
         data.length > 0 ? (
           <ResponsiveContainer width="100%" height={350}>
             <BarChart data={data} layout="vertical" margin={{ left: 120 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid {...chartGrid} />
               <XAxis
                 type="number"
+                {...chartAxis}
                 tickFormatter={(v) =>
                   new Intl.NumberFormat("es-AR", {
                     notation: "compact",
@@ -109,13 +121,16 @@ export default function GraficoItemsPage() {
               <YAxis
                 type="category"
                 dataKey="nombre"
-                fontSize={11}
+                {...chartAxis}
+                tick={yAxisTick}
                 width={120}
               />
               <Tooltip
+                {...chartTooltip}
+                cursor={chartCursorBar}
                 formatter={(value) => [formatCurrency(Number(value)), "Ingreso"]}
               />
-              <Bar dataKey="total" fill="#3b82f6" />
+              <Bar dataKey="total" fill={CHART_COLORS[2]} />
             </BarChart>
           </ResponsiveContainer>
         ) : undefined

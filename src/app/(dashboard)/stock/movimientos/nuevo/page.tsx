@@ -162,7 +162,7 @@ export default function NuevoMovimientoStockPage() {
                     </SelectContent>
                   </Select>
                   {errors.tipo && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.tipo.message}
                     </p>
                   )}
@@ -199,7 +199,7 @@ export default function NuevoMovimientoStockPage() {
                     </SelectContent>
                   </Select>
                   {errors.deposito_id && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.deposito_id.message}
                     </p>
                   )}
@@ -223,7 +223,7 @@ export default function NuevoMovimientoStockPage() {
                     </SelectContent>
                   </Select>
                   {errors.item_id && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.item_id.message}
                     </p>
                   )}
@@ -238,7 +238,7 @@ export default function NuevoMovimientoStockPage() {
                     placeholder="0"
                   />
                   {errors.cantidad && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.cantidad.message}
                     </p>
                   )}
@@ -254,7 +254,7 @@ export default function NuevoMovimientoStockPage() {
                     placeholder="Motivo del movimiento..."
                   />
                   {errors.motivo && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.motivo.message}
                     </p>
                   )}
@@ -266,7 +266,7 @@ export default function NuevoMovimientoStockPage() {
                   Stock actual en{" "}
                   <span className="font-medium">{depositoNombre}</span>:{" "}
                   <span
-                    className={`font-semibold ${stockActual <= 0 ? "text-red-600" : stockActual <= 10 ? "text-orange-600" : ""}`}
+                    className={`font-semibold ${stockActual <= 0 ? "text-destructive" : stockActual <= 10 ? "text-warning" : ""}`}
                   >
                     {stockActual} unidades
                   </span>

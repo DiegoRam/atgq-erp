@@ -66,10 +66,10 @@ const columns: ColumnDef<MovimientoStock>[] = [
       const tipo = row.original.tipo;
       const colorClass =
         tipo === "ingreso"
-          ? "bg-green-100 text-green-800 hover:bg-green-100"
+          ? "border-transparent bg-success/15 text-success hover:bg-success/15"
           : tipo === "egreso"
-            ? "bg-red-100 text-red-800 hover:bg-red-100"
-            : "bg-blue-100 text-blue-800 hover:bg-blue-100";
+            ? "border-transparent bg-destructive/15 text-destructive hover:bg-destructive/15"
+            : "border-transparent bg-info/15 text-info hover:bg-info/15";
       const label =
         tipo === "ingreso"
           ? "Ingreso"
@@ -85,7 +85,7 @@ const columns: ColumnDef<MovimientoStock>[] = [
     cell: ({ row }) => {
       const tipo = row.original.tipo;
       const prefix = tipo === "egreso" ? "-" : "+";
-      const color = tipo === "egreso" ? "text-red-600" : "text-green-700";
+      const color = tipo === "egreso" ? "text-destructive" : "text-success";
       return (
         <span className={`font-semibold ${color}`}>
           {prefix}{row.original.cantidad}

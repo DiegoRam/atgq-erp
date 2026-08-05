@@ -151,7 +151,7 @@ export default function TransferenciasPage() {
                   </SelectContent>
                 </Select>
                 {errors.caja_origen_id && (
-                  <p className="text-xs text-red-500">
+                  <p className="text-xs text-destructive">
                     {errors.caja_origen_id.message}
                   </p>
                 )}
@@ -180,7 +180,7 @@ export default function TransferenciasPage() {
                   </SelectContent>
                 </Select>
                 {errors.caja_destino_id && (
-                  <p className="text-xs text-red-500">
+                  <p className="text-xs text-destructive">
                     {errors.caja_destino_id.message}
                   </p>
                 )}
@@ -196,7 +196,7 @@ export default function TransferenciasPage() {
                   placeholder="0.00"
                 />
                 {errors.monto && (
-                  <p className="text-xs text-red-500">{errors.monto.message}</p>
+                  <p className="text-xs text-destructive">{errors.monto.message}</p>
                 )}
               </div>
 
@@ -213,7 +213,7 @@ export default function TransferenciasPage() {
                 <Label htmlFor="fecha">Fecha</Label>
                 <Input id="fecha" type="date" {...register("fecha")} />
                 {errors.fecha && (
-                  <p className="text-xs text-red-500">{errors.fecha.message}</p>
+                  <p className="text-xs text-destructive">{errors.fecha.message}</p>
                 )}
               </div>
 

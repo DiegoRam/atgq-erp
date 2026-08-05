@@ -10,6 +10,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatCurrency } from "@/lib/format";
+import {
+  chartGrid,
+  chartAxis,
+  chartTooltip,
+  chartCursorBar,
+  CHART_COLORS,
+} from "@/lib/chart-theme";
 
 interface RecaudacionChartProps {
   data: { mes: string; total: number }[];
@@ -21,9 +28,10 @@ export function RecaudacionChart({ data }: RecaudacionChartProps) {
   return (
     <ResponsiveContainer width="100%" height={250}>
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="mes" fontSize={12} />
+        <CartesianGrid {...chartGrid} />
+        <XAxis dataKey="mes" {...chartAxis} />
         <YAxis
+          {...chartAxis}
           tickFormatter={(v) =>
             new Intl.NumberFormat("es-AR", {
               notation: "compact",
@@ -32,12 +40,14 @@ export function RecaudacionChart({ data }: RecaudacionChartProps) {
           }
         />
         <Tooltip
+          {...chartTooltip}
+          cursor={chartCursorBar}
           formatter={(value) => [
             formatCurrency(Number(value)),
             "Recaudación neta",
           ]}
         />
-        <Bar dataKey="total" fill="#22c55e" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="total" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

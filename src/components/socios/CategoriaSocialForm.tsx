@@ -107,7 +107,7 @@ export function CategoriaSocialForm({
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -125,7 +125,7 @@ export function CategoriaSocialForm({
             {...register("monto_base", { valueAsNumber: true })}
           />
           {errors.monto_base && (
-            <p className="text-xs text-red-500">{errors.monto_base.message}</p>
+            <p className="text-xs text-destructive">{errors.monto_base.message}</p>
           )}
         </div>
 

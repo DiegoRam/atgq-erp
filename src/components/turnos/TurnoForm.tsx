@@ -148,7 +148,7 @@ export function TurnoForm({
             </div>
           )}
           {errors.socio_id && (
-            <p className="text-xs text-red-500">{errors.socio_id.message}</p>
+            <p className="text-xs text-destructive">{errors.socio_id.message}</p>
           )}
         </div>
 
@@ -167,7 +167,7 @@ export function TurnoForm({
             </SelectContent>
           </Select>
           {errors.instalacion_id && (
-            <p className="text-xs text-red-500">{errors.instalacion_id.message}</p>
+            <p className="text-xs text-destructive">{errors.instalacion_id.message}</p>
           )}
         </div>
 
@@ -175,7 +175,7 @@ export function TurnoForm({
           <Label htmlFor="fecha_turno">Fecha</Label>
           <Input id="fecha_turno" type="date" {...register("fecha_turno")} />
           {errors.fecha_turno && (
-            <p className="text-xs text-red-500">{errors.fecha_turno.message}</p>
+            <p className="text-xs text-destructive">{errors.fecha_turno.message}</p>
           )}
         </div>
 
@@ -184,14 +184,14 @@ export function TurnoForm({
             <Label htmlFor="hora_inicio">Hora Inicio</Label>
             <Input id="hora_inicio" type="time" {...register("hora_inicio")} />
             {errors.hora_inicio && (
-              <p className="text-xs text-red-500">{errors.hora_inicio.message}</p>
+              <p className="text-xs text-destructive">{errors.hora_inicio.message}</p>
             )}
           </div>
           <div className="space-y-1">
             <Label htmlFor="hora_fin">Hora Fin</Label>
             <Input id="hora_fin" type="time" {...register("hora_fin")} />
             {errors.hora_fin && (
-              <p className="text-xs text-red-500">{errors.hora_fin.message}</p>
+              <p className="text-xs text-destructive">{errors.hora_fin.message}</p>
             )}
           </div>
         </div>

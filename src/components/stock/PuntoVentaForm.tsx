@@ -123,7 +123,7 @@ export function PuntoVentaForm({
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -156,7 +156,7 @@ export function PuntoVentaForm({
             Las ventas de este sector se acreditan como ingreso en esta caja.
           </p>
           {errors.caja_id && (
-            <p className="text-xs text-red-500">{errors.caja_id.message}</p>
+            <p className="text-xs text-destructive">{errors.caja_id.message}</p>
           )}
         </div>
 

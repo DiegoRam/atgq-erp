@@ -50,10 +50,10 @@ const columns: ColumnDef<MovimientoFondo>[] = [
       const tipo = row.original.tipo;
       const colorClass =
         tipo === "ingreso"
-          ? "bg-green-100 text-green-800 hover:bg-green-100"
+          ? "border-transparent bg-success/15 text-success hover:bg-success/15"
           : tipo === "egreso"
-            ? "bg-red-100 text-red-800 hover:bg-red-100"
-            : "bg-blue-100 text-blue-800 hover:bg-blue-100";
+            ? "border-transparent bg-destructive/15 text-destructive hover:bg-destructive/15"
+            : "border-transparent bg-info/15 text-info hover:bg-info/15";
       const label =
         tipo === "ingreso"
           ? "Ingreso"
@@ -79,7 +79,7 @@ const columns: ColumnDef<MovimientoFondo>[] = [
     header: "Monto",
     cell: ({ row }) => {
       const tipo = row.original.tipo;
-      const color = tipo === "egreso" ? "text-red-600" : "text-green-700";
+      const color = tipo === "egreso" ? "text-destructive" : "text-success";
       const prefix = tipo === "egreso" ? "-" : "+";
       return (
         <span className={`font-semibold ${color}`}>
@@ -278,20 +278,20 @@ export default function MovimientosPage() {
       <div className="flex gap-6 rounded-md border bg-muted/30 p-3 text-sm">
         <div>
           <span className="text-muted-foreground">Total Ingresos: </span>
-          <span className="font-semibold text-green-700">
+          <span className="font-semibold text-success">
             {formatCurrency(totalIngresos)}
           </span>
         </div>
         <div>
           <span className="text-muted-foreground">Total Egresos: </span>
-          <span className="font-semibold text-red-600">
+          <span className="font-semibold text-destructive">
             {formatCurrency(totalEgresos)}
           </span>
         </div>
         <div>
           <span className="text-muted-foreground">Balance: </span>
           <span
-            className={`font-semibold ${balance >= 0 ? "text-green-700" : "text-red-600"}`}
+            className={`font-semibold ${balance >= 0 ? "text-success" : "text-destructive"}`}
           >
             {formatCurrency(balance)}
           </span>

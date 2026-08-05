@@ -169,7 +169,7 @@ export default function InventarioPage() {
       />
 
       {hasNegative && (
-        <div className="flex items-center gap-2 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+        <div className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
             Hay ítems con stock negativo. Revise los movimientos pendientes.
@@ -203,8 +203,8 @@ export default function InventarioPage() {
                 <button
                   className={`flex w-full items-center justify-between rounded-md px-4 py-2.5 text-left font-medium ${
                     group.deposito_tipo === "punto_venta"
-                      ? "bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
-                      : "bg-blue-50 text-blue-900 hover:bg-blue-100"
+                      ? "bg-success/10 text-foreground hover:bg-success/20"
+                      : "bg-info/10 text-foreground hover:bg-info/20"
                   }`}
                 >
                   <span>
@@ -213,8 +213,8 @@ export default function InventarioPage() {
                     <span
                       className={`text-sm font-normal ${
                         group.deposito_tipo === "punto_venta"
-                          ? "text-emerald-600"
-                          : "text-blue-600"
+                          ? "text-success"
+                          : "text-info"
                       }`}
                     >
                       ({group.items.length} ítems)
@@ -239,9 +239,9 @@ export default function InventarioPage() {
                       const qty = row.cantidad;
                       const qtyClass =
                         qty <= 0
-                          ? "text-red-600 font-bold"
+                          ? "text-destructive font-bold"
                           : qty <= 10
-                            ? "text-orange-600 font-semibold"
+                            ? "text-warning font-semibold"
                             : "";
                       return (
                         <TableRow key={row.id}>

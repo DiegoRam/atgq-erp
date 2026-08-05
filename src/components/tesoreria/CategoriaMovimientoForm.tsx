@@ -109,7 +109,7 @@ export function CategoriaMovimientoForm({
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -130,7 +130,7 @@ export function CategoriaMovimientoForm({
             </SelectContent>
           </Select>
           {errors.tipo && (
-            <p className="text-xs text-red-500">{errors.tipo.message}</p>
+            <p className="text-xs text-destructive">{errors.tipo.message}</p>
           )}
         </div>
 

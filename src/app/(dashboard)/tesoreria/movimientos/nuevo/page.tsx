@@ -140,7 +140,7 @@ export default function NuevoMovimientoPage() {
                     </SelectContent>
                   </Select>
                   {errors.tipo && (
-                    <p className="text-xs text-red-500">{errors.tipo.message}</p>
+                    <p className="text-xs text-destructive">{errors.tipo.message}</p>
                   )}
                 </div>
 
@@ -162,7 +162,7 @@ export default function NuevoMovimientoPage() {
                     </SelectContent>
                   </Select>
                   {errors.caja_id && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.caja_id.message}
                     </p>
                   )}
@@ -186,7 +186,7 @@ export default function NuevoMovimientoPage() {
                     </SelectContent>
                   </Select>
                   {errors.categoria_id && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.categoria_id.message}
                     </p>
                   )}
@@ -202,7 +202,7 @@ export default function NuevoMovimientoPage() {
                     placeholder="0.00"
                   />
                   {errors.monto && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.monto.message}
                     </p>
                   )}
@@ -225,7 +225,7 @@ export default function NuevoMovimientoPage() {
                     {...register("fecha")}
                   />
                   {errors.fecha && (
-                    <p className="text-xs text-red-500">
+                    <p className="text-xs text-destructive">
                       {errors.fecha.message}
                     </p>
                   )}

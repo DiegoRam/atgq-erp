@@ -22,7 +22,7 @@ export function ReportLayout({
       <PageHeader title={title} description={description} actions={actions} />
       {filters && <div className="flex flex-wrap items-center gap-2">{filters}</div>}
       {chart && (
-        <div className="rounded-md border bg-white p-4">
+        <div className="rounded-md border bg-card p-4">
           {chart}
         </div>
       )}

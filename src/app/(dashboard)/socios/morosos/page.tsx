@@ -23,7 +23,7 @@ const columns: ColumnDef<SocioMoroso>[] = [
     cell: ({ row }) => {
       const v = Number(row.original.cuotas_impagas);
       return (
-        <span className={v > 3 ? "font-bold text-red-600" : ""}>
+        <span className={v > 3 ? "font-bold text-destructive" : ""}>
           {v}
         </span>
       );

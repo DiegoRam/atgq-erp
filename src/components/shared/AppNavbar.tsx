@@ -73,7 +73,7 @@ function MobileNavModule({
 
   return (
     <Collapsible>
-      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-semibold hover:bg-slate-100">
+      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-semibold hover:bg-accent">
         {module.label}
         <ChevronDown className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-180" />
       </CollapsibleTrigger>
@@ -85,7 +85,7 @@ function MobileNavModule({
             ) : (
               <button
                 key={item.href}
-                className="block w-full rounded-md px-3 py-2 text-left text-sm text-muted-foreground hover:bg-slate-100 hover:text-foreground"
+                className="block w-full rounded-md px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
                 onClick={() => {
                   openTab(item.href, item.label);
                   router.push(item.href);

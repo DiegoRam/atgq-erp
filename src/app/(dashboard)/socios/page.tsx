@@ -25,7 +25,7 @@ const columns: ColumnDef<Socio>[] = [
       const meta = table.options.meta as { onEdit?: (socio: Socio) => void };
       return (
         <button
-          className="font-medium text-blue-600 hover:underline"
+          className="font-medium text-info hover:underline"
           onClick={() => meta?.onEdit?.(row.original)}
         >
           {row.original.nro_socio}
@@ -68,7 +68,7 @@ const columns: ColumnDef<Socio>[] = [
     header: "Impagas",
     cell: ({ row }) => {
       const v = row.original.cuotas_impagas ?? 0;
-      return v > 0 ? <span className="font-semibold text-red-600">{v}</span> : 0;
+      return v > 0 ? <span className="font-semibold text-destructive">{v}</span> : 0;
     },
   },
   {

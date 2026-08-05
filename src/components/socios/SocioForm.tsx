@@ -148,7 +148,7 @@ export function SocioForm({ open, onOpenChange, socio, onSaved }: SocioFormProps
             {...register("nro_socio", { valueAsNumber: true })}
           />
           {errors.nro_socio && (
-            <p className="text-xs text-red-500">{errors.nro_socio.message}</p>
+            <p className="text-xs text-destructive">{errors.nro_socio.message}</p>
           )}
         </div>
 
@@ -156,7 +156,7 @@ export function SocioForm({ open, onOpenChange, socio, onSaved }: SocioFormProps
           <Label htmlFor="dni">DNI</Label>
           <Input id="dni" {...register("dni")} />
           {errors.dni && (
-            <p className="text-xs text-red-500">{errors.dni.message}</p>
+            <p className="text-xs text-destructive">{errors.dni.message}</p>
           )}
         </div>
 
@@ -170,7 +170,7 @@ export function SocioForm({ open, onOpenChange, socio, onSaved }: SocioFormProps
             }}
           />
           {errors.apellido && (
-            <p className="text-xs text-red-500">{errors.apellido.message}</p>
+            <p className="text-xs text-destructive">{errors.apellido.message}</p>
           )}
         </div>
 
@@ -178,7 +178,7 @@ export function SocioForm({ open, onOpenChange, socio, onSaved }: SocioFormProps
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -200,7 +200,7 @@ export function SocioForm({ open, onOpenChange, socio, onSaved }: SocioFormProps
             </SelectContent>
           </Select>
           {errors.categoria_id && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-destructive">
               {errors.categoria_id.message}
             </p>
           )}
@@ -231,7 +231,7 @@ export function SocioForm({ open, onOpenChange, socio, onSaved }: SocioFormProps
           <Label htmlFor="fecha_alta">Fecha Alta</Label>
           <Input id="fecha_alta" type="date" {...register("fecha_alta")} />
           {errors.fecha_alta && (
-            <p className="text-xs text-red-500">{errors.fecha_alta.message}</p>
+            <p className="text-xs text-destructive">{errors.fecha_alta.message}</p>
           )}
         </div>
 

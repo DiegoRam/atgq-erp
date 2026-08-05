@@ -21,6 +21,13 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSociosPorEdad } from "./actions";
+import {
+  chartGrid,
+  chartAxis,
+  chartTooltip,
+  chartCursorBar,
+  CHART_COLORS,
+} from "@/lib/chart-theme";
 
 export default function ReportEdadesPage() {
   const [data, setData] = useState<{ rango: string; cantidad: number }[]>([]);
@@ -39,11 +46,11 @@ export default function ReportEdadesPage() {
         data.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="rango" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="cantidad" fill="#8b5cf6" />
+              <CartesianGrid {...chartGrid} />
+              <XAxis dataKey="rango" {...chartAxis} />
+              <YAxis {...chartAxis} />
+              <Tooltip {...chartTooltip} cursor={chartCursorBar} />
+              <Bar dataKey="cantidad" fill={CHART_COLORS[4]} />
             </BarChart>
           </ResponsiveContainer>
         ) : undefined

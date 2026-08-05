@@ -130,7 +130,7 @@ export function StockItemForm({
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -143,7 +143,7 @@ export function StockItemForm({
           <Label htmlFor="unidad">Unidad</Label>
           <Input id="unidad" {...register("unidad")} placeholder="unidad" />
           {errors.unidad && (
-            <p className="text-xs text-red-500">{errors.unidad.message}</p>
+            <p className="text-xs text-destructive">{errors.unidad.message}</p>
           )}
         </div>
 
@@ -190,7 +190,7 @@ export function StockItemForm({
                 </SelectContent>
               </Select>
               {errors.deposito_id && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   {errors.deposito_id.message}
                 </p>
               )}

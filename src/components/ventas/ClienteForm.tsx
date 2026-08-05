@@ -109,7 +109,7 @@ export function ClienteForm({
           <Label htmlFor="apellido">Apellido</Label>
           <Input id="apellido" {...register("apellido")} />
           {errors.apellido && (
-            <p className="text-xs text-red-500">{errors.apellido.message}</p>
+            <p className="text-xs text-destructive">{errors.apellido.message}</p>
           )}
         </div>
 
@@ -117,7 +117,7 @@ export function ClienteForm({
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -130,7 +130,7 @@ export function ClienteForm({
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" {...register("email")} />
           {errors.email && (
-            <p className="text-xs text-red-500">{errors.email.message}</p>
+            <p className="text-xs text-destructive">{errors.email.message}</p>
           )}
         </div>
 

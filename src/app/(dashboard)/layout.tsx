@@ -45,11 +45,11 @@ export default async function DashboardLayout({
       <main className="flex-1 bg-muted/30 p-2 sm:p-4">
         {hasNoRole ? (
           <div className="flex items-center justify-center py-20">
-            <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-6 text-center">
-              <h2 className="text-lg font-semibold text-yellow-800">
+            <div className="rounded-lg border border-warning/40 bg-warning/10 p-6 text-center">
+              <h2 className="text-lg font-semibold text-warning">
                 Sin rol asignado
               </h2>
-              <p className="mt-2 text-sm text-yellow-700">
+              <p className="mt-2 text-sm text-foreground/80">
                 Su cuenta no tiene rol asignado. Contacte al administrador.
               </p>
             </div>

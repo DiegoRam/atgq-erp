@@ -188,7 +188,7 @@ export default function TransferenciasStockPage() {
                   </SelectContent>
                 </Select>
                 {errors.item_id && (
-                  <p className="text-xs text-red-500">{errors.item_id.message}</p>
+                  <p className="text-xs text-destructive">{errors.item_id.message}</p>
                 )}
               </div>
 
@@ -209,7 +209,7 @@ export default function TransferenciasStockPage() {
                   <SelectContent>{renderOpciones()}</SelectContent>
                 </Select>
                 {errors.deposito_origen_id && (
-                  <p className="text-xs text-red-500">
+                  <p className="text-xs text-destructive">
                     {errors.deposito_origen_id.message}
                   </p>
                 )}
@@ -217,7 +217,7 @@ export default function TransferenciasStockPage() {
                   <p
                     className={
                       stockOrigen <= 0
-                        ? "text-xs text-red-500"
+                        ? "text-xs text-destructive"
                         : "text-xs text-muted-foreground"
                     }
                   >
@@ -238,7 +238,7 @@ export default function TransferenciasStockPage() {
                   <SelectContent>{renderOpciones(origenId)}</SelectContent>
                 </Select>
                 {errors.deposito_destino_id && (
-                  <p className="text-xs text-red-500">
+                  <p className="text-xs text-destructive">
                     {errors.deposito_destino_id.message}
                   </p>
                 )}
@@ -254,7 +254,7 @@ export default function TransferenciasStockPage() {
                   placeholder="0"
                 />
                 {errors.cantidad && (
-                  <p className="text-xs text-red-500">
+                  <p className="text-xs text-destructive">
                     {errors.cantidad.message}
                   </p>
                 )}

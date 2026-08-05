@@ -95,7 +95,7 @@ export function CajaForm({ open, onOpenChange, caja, onSaved }: CajaFormProps) {
           <Label htmlFor="nombre">Nombre</Label>
           <Input id="nombre" {...register("nombre")} />
           {errors.nombre && (
-            <p className="text-xs text-red-500">{errors.nombre.message}</p>
+            <p className="text-xs text-destructive">{errors.nombre.message}</p>
           )}
         </div>
 
@@ -113,7 +113,7 @@ export function CajaForm({ open, onOpenChange, caja, onSaved }: CajaFormProps) {
             {...register("saldo_inicial", { valueAsNumber: true })}
           />
           {errors.saldo_inicial && (
-            <p className="text-xs text-red-500">
+            <p className="text-xs text-destructive">
               {errors.saldo_inicial.message}
             </p>
           )}
