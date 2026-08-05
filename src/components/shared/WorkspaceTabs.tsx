@@ -19,9 +19,15 @@ function isReportTab(href: string): boolean {
 }
 
 export function WorkspaceTabs() {
-  const { tabs, activeTabId, setActive, closeTab } = useTabsStore();
+  const { tabs, activeTabId, setActive, closeTab, hydrate } = useTabsStore();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Cargar los tabs de sessionStorage recién después de montar: el primer
+  // render tiene que coincidir con el HTML del servidor (sin tabs).
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   // Sync active tab with current URL
   useEffect(() => {
