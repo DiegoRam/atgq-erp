@@ -163,6 +163,13 @@ BEGIN
   SELECT id INTO v_socio2 FROM socios WHERE nro_socio = 1002;
   SELECT id INTO v_socio3 FROM socios WHERE nro_socio = 1003;
 
+  -- Sin los socios puente estas ventas quedaban con socio_id y cliente_id
+  -- en NULL, o sea sin comprador. Desde 20260805000001 el trigger de ventas
+  -- lo rechaza; mejor abortar acá, con el motivo real a la vista.
+  IF v_socio1 IS NULL OR v_socio2 IS NULL OR v_socio3 IS NULL THEN
+    RAISE EXCEPTION 'Faltan los socios puente 1001-1003: correr el bloque de socios de este mismo archivo antes que el de ventas';
+  END IF;
+
   SELECT id INTO v_cliente1 FROM clientes WHERE apellido = 'Fernández' AND nombre = 'Carlos' LIMIT 1;
   SELECT id INTO v_cliente2 FROM clientes WHERE apellido = 'López' AND nombre = 'María' LIMIT 1;
   SELECT id INTO v_cliente3 FROM clientes WHERE apellido = 'Gómez' AND nombre = 'Roberto' LIMIT 1;

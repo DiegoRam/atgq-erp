@@ -34,17 +34,6 @@ export async function getItemsVentasActivos(): Promise<ItemVenta[]> {
   return (data ?? []) as ItemVenta[];
 }
 
-export async function getClientesForSelect() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("clientes")
-    .select("id, apellido, nombre")
-    .order("apellido")
-    .order("nombre");
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
-
 export async function getMetodosPago() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -71,9 +60,12 @@ export async function getSociosForAutocomplete(search: string) {
   if (isNumeric) {
     query = query.eq("nro_socio", parseInt(search));
   } else {
-    query = query.or(
-      `apellido.ilike.%${search}%,nombre.ilike.%${search}%`,
-    );
+    // El término se interpola en la sintaxis de `or` de PostgREST: una coma,
+    // un paréntesis o una comilla lo rompen y devuelven 500 ("failed to parse
+    // logic tree"). Se sacan acá en vez de confiar en lo que tipeen.
+    const term = search.replace(/[,()"%\\]/g, " ").trim();
+    if (!term) return [];
+    query = query.or(`apellido.ilike.%${term}%,nombre.ilike.%${term}%`);
   }
 
   const { data, error } = await query;
@@ -98,6 +90,10 @@ export async function crearVenta(
     p_socio_id: parsed.data.socio_id || null,
     p_metodo_pago_id: parsed.data.metodo_pago_id,
     p_items: parsed.data.items,
+    p_no_socio_nombre: parsed.data.no_socio_nombre || null,
+    p_no_socio_dni: parsed.data.no_socio_dni || null,
+    p_no_socio_credencial_venc:
+      parsed.data.no_socio_credencial_vencimiento || null,
   });
   if (error) throw new Error(error.message);
 

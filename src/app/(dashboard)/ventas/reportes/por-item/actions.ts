@@ -36,7 +36,7 @@ export async function getVentasPorItem(params: {
   const query = supabase
     .from("ventas_items")
     .select(
-      "cantidad, precio_unitario, subtotal, venta:ventas!inner(id, fecha, anulada, punto_venta_id, punto_venta:depositos!punto_venta_id(nombre), cliente:clientes(apellido, nombre), socio:socios(nro_socio, apellido, nombre))",
+      "cantidad, precio_unitario, subtotal, venta:ventas!inner(id, fecha, anulada, punto_venta_id, no_socio_nombre, punto_venta:depositos!punto_venta_id(nombre), cliente:clientes(apellido, nombre), socio:socios(nro_socio, apellido, nombre))",
     )
     .eq("item_id", params.item_id);
 
@@ -51,6 +51,7 @@ export async function getVentasPorItem(params: {
       fecha: string;
       anulada: boolean;
       punto_venta_id: string;
+      no_socio_nombre: string | null;
       punto_venta: { nombre: string } | null;
       cliente: { apellido: string; nombre: string } | null;
       socio: { nro_socio: number; apellido: string; nombre: string } | null;
@@ -75,6 +76,8 @@ export async function getVentasPorItem(params: {
       clienteStr = `#${venta.socio.nro_socio} ${venta.socio.apellido}, ${venta.socio.nombre}`;
     } else if (venta.cliente) {
       clienteStr = `${venta.cliente.apellido}, ${venta.cliente.nombre}`;
+    } else if (venta.no_socio_nombre) {
+      clienteStr = `${venta.no_socio_nombre} (No socio)`;
     }
 
     results.push({

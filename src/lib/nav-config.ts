@@ -64,7 +64,10 @@ export const NAV_MODULES: NavModule[] = [
     items: [
       { label: "Nueva Venta", href: "/ventas/nueva" },
       { label: "Ventas Realizadas", href: "/ventas" },
-      { label: "Clientes", href: "/ventas/clientes" },
+      // Clientes sale del menú: desde que el POS usa "No Socio" ya no hay forma
+      // de asociar una ficha de `clientes` a una venta nueva, así que la
+      // pantalla sólo mostraría un padrón congelado. La ruta sigue viva
+      // (/ventas/clientes) para consultar el histórico ya cargado.
       { label: "Items de Ventas", href: "/ventas/items" },
       sep,
       {

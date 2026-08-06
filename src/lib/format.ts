@@ -22,6 +22,36 @@ export function formatAntiguedad(fechaAlta: string | Date | null | undefined): s
   return parts.join(" ");
 }
 
+/**
+ * Formatea una columna `DATE` (`YYYY-MM-DD`) sin correrla un día:
+ * `new Date("2026-08-05")` se parsea como medianoche **UTC**, que en ART cae
+ * el día anterior. Anclar la hora local evita el corrimiento.
+ */
+export function formatDateOnly(date: string | null | undefined): string {
+  if (!date) return "—";
+  return formatDate(`${date}T00:00:00`);
+}
+
+/**
+ * Fecha de hoy en Buenos Aires como `YYYY-MM-DD`, comparable con un
+ * `<input type="date">`. No usar `new Date()` a secas: en Vercel el server
+ * corre en UTC y después de las 21:00 ART ya estaría en el día siguiente.
+ */
+export function todayISO(): string {
+  // formatToParts y no format("en-CA"): con un build de Node sin full-ICU el
+  // locale cae a en-US y devolvería "8/5/2026", rompiendo las comparaciones
+  // de string en silencio.
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
 export function formatCurrency(amount: number | null | undefined): string {
   if (amount == null) return "—";
   return new Intl.NumberFormat("es-AR", {
