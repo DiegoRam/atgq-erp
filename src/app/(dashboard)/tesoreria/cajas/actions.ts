@@ -81,3 +81,75 @@ export async function updateCaja(id: string, formData: CajaFormData) {
   }
   revalidatePath("/tesoreria/cajas");
 }
+
+/**
+ * Los conteos se hacen con el cliente del usuario, así que RLS puede ocultar
+ * filas de otro módulo (p.ej. un rol con `tesoreria.eliminar` pero sin
+ * `stock.leer`) y devolver 0 sin error. Se falla cerrado ante un `count` nulo, y
+ * el FK 23503 queda como red final: sólo se pierde el mensaje detallado.
+ */
+function bloquea(count: number | null): boolean {
+  return count === null || count > 0;
+}
+
+export async function deleteCaja(id: string) {
+  const supabase = await createClient();
+
+  // Todas las FKs entrantes son NO ACTION: se chequean antes para poder dar un
+  // mensaje entendible en vez de un 23503 crudo. Dos consultas con `.eq()` en
+  // vez de un `.or()` interpolado: supabase-js codifica los valores de `.eq()`,
+  // el contenido de `.or()` se parsea crudo.
+  const { count: movOrigenCount, error: movOrigenError } = await supabase
+    .from("movimientos_fondos")
+    .select("*", { count: "exact", head: true })
+    .eq("caja_id", id);
+  if (movOrigenError) throw new Error(movOrigenError.message);
+
+  const { count: movDestinoCount, error: movDestinoError } = await supabase
+    .from("movimientos_fondos")
+    .select("*", { count: "exact", head: true })
+    .eq("caja_destino_id", id);
+  if (movDestinoError) throw new Error(movDestinoError.message);
+
+  if (bloquea(movOrigenCount) || bloquea(movDestinoCount)) {
+    throw new Error(
+      "No se puede eliminar la caja: tiene movimientos de fondos. Desactívela en su lugar.",
+    );
+  }
+
+  const { count: pvCount, error: pvError } = await supabase
+    .from("depositos")
+    .select("*", { count: "exact", head: true })
+    .eq("caja_id", id);
+  if (pvError) throw new Error(pvError.message);
+  if (bloquea(pvCount)) {
+    throw new Error(
+      "No se puede eliminar la caja: tiene puntos de venta vinculados. Desvincúlelos primero.",
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("cajas")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error(
+        "No se puede eliminar la caja: tiene registros asociados. Desactívela en su lugar.",
+      );
+    }
+    throw new Error(error.message);
+  }
+
+  // RLS que deniega no devuelve error: devuelve cero filas.
+  if (!data || data.length === 0) {
+    throw new Error(
+      "No se pudo eliminar la caja: no existe o no tiene permisos para eliminarla.",
+    );
+  }
+
+  revalidatePath("/tesoreria/cajas");
+  revalidatePath("/stock/puntos-venta");
+}

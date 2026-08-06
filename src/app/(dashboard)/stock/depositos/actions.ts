@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { deleteUbicacion } from "../ubicaciones";
 import type { Deposito, DepositoFormData } from "@/types/stock";
 
 export async function getDepositos(): Promise<Deposito[]> {
@@ -91,5 +92,11 @@ export async function updateDeposito(id: string, formData: DepositoFormData) {
     }
     throw new Error(error.message);
   }
+  revalidatePath("/stock/depositos");
+}
+
+export async function deleteDeposito(id: string) {
+  const supabase = await createClient();
+  await deleteUbicacion(supabase, id, "deposito");
   revalidatePath("/stock/depositos");
 }
