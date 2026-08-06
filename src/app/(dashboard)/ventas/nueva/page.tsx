@@ -23,11 +23,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Plus, ShoppingCart, Check } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDateOnly, todayISO } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { CarritoVenta } from "@/components/ventas/CarritoVenta";
 import {
   getItemsVentasActivos,
-  getClientesForSelect,
   getMetodosPago,
   getSociosForAutocomplete,
   getPuntosVentaActivos,
@@ -36,7 +36,6 @@ import {
 import type { ItemVenta, CartItem } from "@/types/ventas";
 import type { Deposito } from "@/types/stock";
 
-type ClienteOption = { id: string; apellido: string; nombre: string };
 type SocioOption = { id: string; nro_socio: number; apellido: string; nombre: string };
 type MetodoPago = { id: string; nombre: string };
 
@@ -45,7 +44,6 @@ const PDV_STORAGE_KEY = "atgq-erp-pdv";
 
 export default function NuevaVentaPage() {
   const [items, setItems] = useState<ItemVenta[]>([]);
-  const [clientes, setClientes] = useState<ClienteOption[]>([]);
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([]);
   const [socioResults, setSocioResults] = useState<SocioOption[]>([]);
   const [puntosVenta, setPuntosVenta] = useState<Deposito[]>([]);
@@ -57,11 +55,15 @@ export default function NuevaVentaPage() {
   const [cantidad, setCantidad] = useState(1);
 
   // Client selection
-  const [tipoCliente, setTipoCliente] = useState<"socio" | "cliente">("socio");
+  const [tipoCliente, setTipoCliente] = useState<"socio" | "no_socio">("socio");
   const [socioSearch, setSocioSearch] = useState("");
   const [selectedSocioId, setSelectedSocioId] = useState("");
-  const [selectedClienteId, setSelectedClienteId] = useState("");
   const [metodoPagoId, setMetodoPagoId] = useState("");
+
+  // No socio: comprador ocasional, se carga a mano en el mostrador
+  const [noSocioNombre, setNoSocioNombre] = useState("");
+  const [noSocioDni, setNoSocioDni] = useState("");
+  const [noSocioVenc, setNoSocioVenc] = useState("");
 
   // State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,12 +72,10 @@ export default function NuevaVentaPage() {
   useEffect(() => {
     Promise.all([
       getItemsVentasActivos(),
-      getClientesForSelect(),
       getMetodosPago(),
       getPuntosVentaActivos(),
-    ]).then(([itemsData, clientesData, metodosData, puntosData]) => {
+    ]).then(([itemsData, metodosData, puntosData]) => {
       setItems(itemsData);
-      setClientes(clientesData);
       setMetodosPago(metodosData);
       setPuntosVenta(puntosData);
 
@@ -109,11 +109,13 @@ export default function NuevaVentaPage() {
   }, []);
 
   useEffect(() => {
+    // Con un socio ya elegido el input muestra "#1 - Apellido, Nombre": volver a
+    // buscar con eso no sirve para nada y además rompía el filtro de PostgREST
     const timeout = setTimeout(() => {
-      if (tipoCliente === "socio") searchSocios(socioSearch);
+      if (tipoCliente === "socio" && !selectedSocioId) searchSocios(socioSearch);
     }, 300);
     return () => clearTimeout(timeout);
-  }, [socioSearch, tipoCliente, searchSocios]);
+  }, [socioSearch, tipoCliente, selectedSocioId, searchSocios]);
 
   function handleAddItem() {
     if (!selectedItemId) return;
@@ -154,6 +156,16 @@ export default function NuevaVentaPage() {
     setSocioResults([]);
   }
 
+  const credencialVencida = !!noSocioVenc && noSocioVenc < todayISO();
+  // Mismo criterio que el schema: los puntos no cuentan como dígitos
+  const dniValido = /^\d{7,8}$/.test(noSocioDni.replace(/\./g, "").trim());
+  const noSocioCompleto =
+    noSocioNombre.trim() !== "" && dniValido && !!noSocioVenc;
+  const compradorListo =
+    tipoCliente === "socio"
+      ? !!selectedSocioId
+      : noSocioCompleto && !credencialVencida;
+
   async function handleConfirm() {
     if (cart.length === 0) {
       toast.error("Agregue al menos un ítem");
@@ -171,17 +183,33 @@ export default function NuevaVentaPage() {
       toast.error("Seleccione un socio");
       return;
     }
-    if (tipoCliente === "cliente" && !selectedClienteId) {
-      toast.error("Seleccione un cliente");
-      return;
+    if (tipoCliente === "no_socio") {
+      if (!noSocioCompleto) {
+        toast.error(
+          "Complete nombre, DNI y vencimiento de la credencial del no socio",
+        );
+        return;
+      }
+      if (credencialVencida) {
+        toast.error(
+          `La credencial de legítimo usuario está vencida (venció el ${formatDateOnly(
+            noSocioVenc,
+          )})`,
+        );
+        return;
+      }
     }
 
     setIsSubmitting(true);
     try {
+      const esNoSocio = tipoCliente === "no_socio";
       const result = await crearVenta({
         punto_venta_id: puntoVentaId,
-        socio_id: tipoCliente === "socio" ? selectedSocioId : null,
-        cliente_id: tipoCliente === "cliente" ? selectedClienteId : null,
+        socio_id: esNoSocio ? null : selectedSocioId,
+        cliente_id: null,
+        no_socio_nombre: esNoSocio ? noSocioNombre.trim() : null,
+        no_socio_dni: esNoSocio ? noSocioDni.trim() : null,
+        no_socio_credencial_vencimiento: esNoSocio ? noSocioVenc : null,
         metodo_pago_id: metodoPagoId,
         items: cart.map((c) => ({
           item_id: c.item_id,
@@ -209,9 +237,15 @@ export default function NuevaVentaPage() {
   function handleNewSale() {
     setCart([]);
     setSelectedSocioId("");
-    setSelectedClienteId("");
     setSocioSearch("");
+    limpiarNoSocio();
     setSuccessDialog(false);
+  }
+
+  function limpiarNoSocio() {
+    setNoSocioNombre("");
+    setNoSocioDni("");
+    setNoSocioVenc("");
   }
 
   const total = cart.reduce((sum, c) => sum + c.subtotal, 0);
@@ -294,21 +328,22 @@ export default function NuevaVentaPage() {
                   size="sm"
                   onClick={() => {
                     setTipoCliente("socio");
-                    setSelectedClienteId("");
+                    limpiarNoSocio();
                   }}
                 >
                   Socio
                 </Button>
                 <Button
-                  variant={tipoCliente === "cliente" ? "default" : "outline"}
+                  variant={tipoCliente === "no_socio" ? "default" : "outline"}
                   size="sm"
                   onClick={() => {
-                    setTipoCliente("cliente");
+                    setTipoCliente("no_socio");
                     setSelectedSocioId("");
                     setSocioSearch("");
+                    setSocioResults([]);
                   }}
                 >
-                  Cliente
+                  No Socio
                 </Button>
               </div>
             </div>
@@ -339,23 +374,50 @@ export default function NuevaVentaPage() {
                 )}
               </div>
             ) : (
-              <div className="space-y-1">
-                <Label className="text-xs">Cliente</Label>
-                <Select
-                  value={selectedClienteId}
-                  onValueChange={setSelectedClienteId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar cliente..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.apellido}, {c.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs" htmlFor="no-socio-nombre">
+                    Nombre y Apellido
+                  </Label>
+                  <Input
+                    id="no-socio-nombre"
+                    value={noSocioNombre}
+                    onChange={(e) => setNoSocioNombre(e.target.value)}
+                    placeholder="Ej: Juan Pérez"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs" htmlFor="no-socio-dni">
+                    DNI
+                  </Label>
+                  <Input
+                    id="no-socio-dni"
+                    inputMode="numeric"
+                    value={noSocioDni}
+                    onChange={(e) => setNoSocioDni(e.target.value)}
+                    placeholder="Ej: 30123456"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs" htmlFor="no-socio-venc">
+                    Venc. credencial legítimo usuario
+                  </Label>
+                  <Input
+                    id="no-socio-venc"
+                    type="date"
+                    value={noSocioVenc}
+                    onChange={(e) => setNoSocioVenc(e.target.value)}
+                    className={cn(
+                      credencialVencida &&
+                        "border-destructive text-destructive focus-visible:ring-destructive",
+                    )}
+                  />
+                  {credencialVencida && (
+                    <p className="text-xs text-destructive">
+                      Credencial vencida: no se puede registrar la venta.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -384,17 +446,40 @@ export default function NuevaVentaPage() {
                 className="w-full"
                 size="lg"
                 onClick={handleConfirm}
-                disabled={isSubmitting || cart.length === 0 || !puntoVentaId}
+                disabled={
+                  isSubmitting ||
+                  cart.length === 0 ||
+                  !puntoVentaId ||
+                  !compradorListo
+                }
               >
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 {isSubmitting ? "Procesando..." : "Confirmar Venta"}
               </Button>
+              {cart.length > 0 && puntoVentaId && !compradorListo && (
+                <p className="text-center text-xs text-muted-foreground">
+                  {tipoCliente === "socio"
+                    ? "Seleccione un socio para confirmar."
+                    : credencialVencida
+                      ? "La credencial vencida impide confirmar la venta."
+                      : noSocioDni.trim() !== "" && !dniValido
+                        ? "El DNI debe tener 7 u 8 dígitos."
+                        : "Complete nombre, DNI y vencimiento de la credencial."}
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <AlertDialog open={successDialog} onOpenChange={setSuccessDialog}>
+      {/* Cerrar con Escape también limpia: si no, el carrito queda cargado y
+          un segundo clic registra la misma venta dos veces */}
+      <AlertDialog
+        open={successDialog}
+        onOpenChange={(open) => {
+          if (!open) handleNewSale();
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">

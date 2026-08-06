@@ -31,7 +31,12 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronDown, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { formatDate, formatCurrency, exportToCSV } from "@/lib/format";
+import {
+  formatDate,
+  formatDateOnly,
+  formatCurrency,
+  exportToCSV,
+} from "@/lib/format";
 import { exportToExcel } from "@/lib/export";
 import {
   getVentas,
@@ -49,6 +54,9 @@ function clienteNombre(venta: Venta): string {
   }
   if (venta.cliente) {
     return `${venta.cliente.apellido}, ${venta.cliente.nombre}`;
+  }
+  if (venta.no_socio_nombre) {
+    return `${venta.no_socio_nombre} (No socio)`;
   }
   return "—";
 }
@@ -214,11 +222,16 @@ export default function VentasRealizadasPage() {
     setExpandedVenta(venta.id);
   }
 
+  const ventaExpandida = data.find((v) => v.id === expandedVenta);
+
   const ventasHeaders = [
     { key: "fecha", label: "Fecha" },
     { key: "nro_venta", label: "Nro Venta" },
     { key: "punto_venta", label: "Punto de Venta" },
     { key: "cliente", label: "Cliente / Socio" },
+    // La constancia de legítimo usuario sólo sirve si se puede consultar
+    { key: "no_socio_dni", label: "DNI No Socio" },
+    { key: "no_socio_credencial", label: "Venc. Credencial L.U." },
     { key: "total", label: "Total" },
     { key: "metodo_pago", label: "Método Pago" },
     { key: "estado", label: "Estado" },
@@ -230,6 +243,10 @@ export default function VentasRealizadasPage() {
       nro_venta: v.id.slice(0, 8).toUpperCase(),
       punto_venta: v.punto_venta?.nombre ?? "",
       cliente: clienteNombre(v),
+      no_socio_dni: v.no_socio_dni ?? "",
+      no_socio_credencial: v.no_socio_credencial_vencimiento
+        ? formatDateOnly(v.no_socio_credencial_vencimiento)
+        : "",
       total: v.total,
       metodo_pago: v.metodo_pago?.nombre ?? "",
       estado: v.anulada ? "Anulada" : "Activa",
@@ -349,6 +366,19 @@ export default function VentasRealizadasPage() {
               <h4 className="mb-2 text-sm font-semibold">
                 Detalle de Venta #{expandedVenta.slice(0, 8).toUpperCase()}
               </h4>
+              {ventaExpandida?.no_socio_nombre && (
+                <p className="mb-2 text-xs text-muted-foreground">
+                  No socio: {ventaExpandida.no_socio_nombre}
+                  {ventaExpandida.no_socio_dni
+                    ? ` — DNI ${ventaExpandida.no_socio_dni}`
+                    : ""}
+                  {ventaExpandida.no_socio_credencial_vencimiento
+                    ? ` — Credencial L.U. vence ${formatDateOnly(
+                        ventaExpandida.no_socio_credencial_vencimiento,
+                      )}`
+                    : ""}
+                </p>
+              )}
               <div className="space-y-1">
                 {expandedItems.map((item) => (
                   <div

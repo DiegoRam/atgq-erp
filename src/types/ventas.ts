@@ -50,6 +50,10 @@ export interface Venta {
   usuario_id: string;
   anulada: boolean;
   created_at: string;
+  // No socio: comprador ocasional cargado a mano en el mostrador
+  no_socio_nombre: string | null;
+  no_socio_dni: string | null;
+  no_socio_credencial_vencimiento: string | null;
   // Joined
   cliente?: { id: string; apellido: string; nombre: string } | null;
   socio?: { id: string; nro_socio: number; apellido: string; nombre: string } | null;
@@ -88,6 +92,10 @@ export interface NuevaVentaData {
   cliente_id?: string | null;
   socio_id?: string | null;
   metodo_pago_id: string;
+  // Van los tres o ninguno; sólo cuando no hay socio_id
+  no_socio_nombre?: string | null;
+  no_socio_dni?: string | null;
+  no_socio_credencial_vencimiento?: string | null;
   // Sin precio_unitario: el precio lo resuelve registrar_venta desde items_ventas
   items: { item_id: string; cantidad: number }[];
 }
