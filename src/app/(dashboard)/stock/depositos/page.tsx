@@ -128,12 +128,16 @@ export default function DepositosPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      await deleteDeposito(deleteTarget.id);
+      const { error } = await deleteDeposito(deleteTarget.id);
+      if (error) {
+        // El diálogo queda abierto para que se lea el motivo del bloqueo.
+        toast.error(error);
+        return;
+      }
       toast.success("Depósito eliminado correctamente");
       setDeleteTarget(null);
       fetchData();
     } catch (err) {
-      // El diálogo queda abierto para que se lea el motivo del bloqueo.
       toast.error(
         err instanceof Error ? err.message : "Error al eliminar el depósito",
       );

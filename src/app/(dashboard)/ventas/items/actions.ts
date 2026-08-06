@@ -68,7 +68,16 @@ export async function updateItemVenta(id: string, formData: ItemVentaFormData) {
   revalidatePath("/ventas/items");
 }
 
-export async function deleteItemVenta(id: string) {
+/**
+ * El error se **devuelve**, no se tira: en un build de producción Next redacta
+ * el mensaje de cualquier Error que escape de un server action y el cliente
+ * recibe "An error occurred in the Server Components render...". Devolverlo es
+ * lo único que hace llegar el motivo real al usuario, y es la convención que ya
+ * usa `src/app/login/actions.ts`.
+ */
+export async function deleteItemVenta(
+  id: string,
+): Promise<{ error?: string }> {
   const supabase = await createClient();
 
   // `ventas_items.item_id` es NO ACTION: el borrado con historial fallaría con
@@ -78,11 +87,15 @@ export async function deleteItemVenta(id: string) {
     .from("ventas_items")
     .select("*", { count: "exact", head: true })
     .eq("item_id", id);
-  if (countError) throw new Error(countError.message);
+  if (countError) {
+    console.error("deleteItemVenta/count", countError);
+    return { error: countError.message };
+  }
   if (count === null || count > 0) {
-    throw new Error(
-      "No se puede eliminar el ítem: figura en ventas registradas. Desactívelo en su lugar.",
-    );
+    return {
+      error:
+        "No se puede eliminar el ítem: figura en ventas registradas. Desactívelo en su lugar.",
+    };
   }
 
   const { data, error } = await supabase
@@ -92,21 +105,25 @@ export async function deleteItemVenta(id: string) {
     .select("id");
 
   if (error) {
+    console.error("deleteItemVenta/delete", error);
     if (error.code === "23503") {
-      throw new Error(
-        "No se puede eliminar el ítem: tiene registros asociados. Desactívelo en su lugar.",
-      );
+      return {
+        error:
+          "No se puede eliminar el ítem: tiene registros asociados. Desactívelo en su lugar.",
+      };
     }
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   // RLS que deniega no devuelve error: devuelve cero filas.
   if (!data || data.length === 0) {
-    throw new Error(
-      "No se pudo eliminar el ítem: no existe o no tiene permisos para eliminarlo.",
-    );
+    return {
+      error:
+        "No se pudo eliminar el ítem: no existe o no tiene permisos para eliminarlo.",
+    };
   }
 
   revalidatePath("/ventas/items");
   revalidatePath("/ventas/nueva");
+  return {};
 }

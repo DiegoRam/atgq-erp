@@ -136,12 +136,16 @@ export default function PuntosVentaPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      await deletePuntoVenta(deleteTarget.id);
+      const { error } = await deletePuntoVenta(deleteTarget.id);
+      if (error) {
+        // El diálogo queda abierto para que se lea el motivo del bloqueo.
+        toast.error(error);
+        return;
+      }
       toast.success("Punto de venta eliminado correctamente");
       setDeleteTarget(null);
       fetchData();
     } catch (err) {
-      // El diálogo queda abierto para que se lea el motivo del bloqueo.
       toast.error(
         err instanceof Error
           ? err.message

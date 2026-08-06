@@ -5,6 +5,15 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 export type TipoUbicacion = "deposito" | "punto_venta";
 
 /**
+ * Los errores se **devuelven**, no se tiran: en un build de producción Next
+ * redacta el mensaje de cualquier Error que escape de un server action y el
+ * cliente recibe "An error occurred in the Server Components render...".
+ * Devolverlo es lo único que hace llegar el motivo real al usuario, y es la
+ * convención que ya usa `src/app/login/actions.ts`.
+ */
+export type ResultadoBorrado = { error?: string };
+
+/**
  * Depósitos y puntos de venta son la misma tabla `depositos` (discriminada por
  * `tipo`), así que el borrado comparte chequeos: sólo cambian las etiquetas.
  * Módulo plano —sin "use server"— para que no quede expuesto como endpoint:
@@ -34,7 +43,7 @@ export async function deleteUbicacion(
   supabase: SupabaseServerClient,
   id: string,
   tipo: TipoUbicacion,
-): Promise<void> {
+): Promise<ResultadoBorrado> {
   const etiqueta = ETIQUETA[tipo];
 
   // Primero se resuelve la fila acotada por `tipo`: sin esto, el ABM de
@@ -46,20 +55,26 @@ export async function deleteUbicacion(
     .eq("id", id)
     .eq("tipo", tipo)
     .maybeSingle();
-  if (ubicacionError) throw new Error(ubicacionError.message);
+  if (ubicacionError) {
+    console.error("deleteUbicacion/select", ubicacionError);
+    return { error: ubicacionError.message };
+  }
   if (!ubicacion) {
-    throw new Error(`No se encontró ${etiqueta} que se quiere eliminar.`);
+    return { error: `No se encontró ${etiqueta} que se quiere eliminar.` };
   }
 
   const { count: ventasCount, error: ventasError } = await supabase
     .from("ventas")
     .select("*", { count: "exact", head: true })
     .eq("punto_venta_id", id);
-  if (ventasError) throw new Error(ventasError.message);
+  if (ventasError) {
+    console.error("deleteUbicacion/ventas", ventasError);
+    return { error: ventasError.message };
+  }
   if (bloquea(ventasCount)) {
-    throw new Error(
-      `No se puede eliminar ${etiqueta}: tiene ventas registradas. Desactívelo en su lugar.`,
-    );
+    return {
+      error: `No se puede eliminar ${etiqueta}: tiene ventas registradas. Desactívelo en su lugar.`,
+    };
   }
 
   // Dos consultas con `.eq()` en vez de un `.or()` interpolado: supabase-js
@@ -68,18 +83,24 @@ export async function deleteUbicacion(
     .from("movimientos_stock")
     .select("*", { count: "exact", head: true })
     .eq("deposito_id", id);
-  if (movOrigenError) throw new Error(movOrigenError.message);
+  if (movOrigenError) {
+    console.error("deleteUbicacion/movimientos", movOrigenError);
+    return { error: movOrigenError.message };
+  }
 
   const { count: movDestinoCount, error: movDestinoError } = await supabase
     .from("movimientos_stock")
     .select("*", { count: "exact", head: true })
     .eq("deposito_destino_id", id);
-  if (movDestinoError) throw new Error(movDestinoError.message);
+  if (movDestinoError) {
+    console.error("deleteUbicacion/movimientos-destino", movDestinoError);
+    return { error: movDestinoError.message };
+  }
 
   if (bloquea(movOrigenCount) || bloquea(movDestinoCount)) {
-    throw new Error(
-      `No se puede eliminar ${etiqueta}: tiene movimientos de stock. Desactívelo en su lugar.`,
-    );
+    return {
+      error: `No se puede eliminar ${etiqueta}: tiene movimientos de stock. Desactívelo en su lugar.`,
+    };
   }
 
   // `stock_inventario.cantidad` no tiene CHECK y los RPC permiten negativos
@@ -90,11 +111,14 @@ export async function deleteUbicacion(
     .select("*", { count: "exact", head: true })
     .eq("deposito_id", id)
     .neq("cantidad", 0);
-  if (stockError) throw new Error(stockError.message);
+  if (stockError) {
+    console.error("deleteUbicacion/inventario", stockError);
+    return { error: stockError.message };
+  }
   if (bloquea(stockCount)) {
-    throw new Error(
-      `No se puede eliminar ${etiqueta}: tiene ítems en stock. Vacíelo o desactívelo en su lugar.`,
-    );
+    return {
+      error: `No se puede eliminar ${etiqueta}: tiene ítems en stock. Vacíelo o desactívelo en su lugar.`,
+    };
   }
 
   // Sin movimientos ni existencias, las filas de inventario que quedan están en
@@ -107,7 +131,10 @@ export async function deleteUbicacion(
     .delete()
     .eq("deposito_id", id)
     .eq("cantidad", 0);
-  if (limpiezaError) throw new Error(limpiezaError.message);
+  if (limpiezaError) {
+    console.error("deleteUbicacion/limpieza", limpiezaError);
+    return { error: limpiezaError.message };
+  }
 
   const { data, error } = await supabase
     .from("depositos")
@@ -117,18 +144,21 @@ export async function deleteUbicacion(
     .select("id");
 
   if (error) {
+    console.error("deleteUbicacion/delete", error);
     if (error.code === "23503") {
-      throw new Error(
-        `No se puede eliminar ${etiqueta}: tiene registros asociados. Desactívelo en su lugar.`,
-      );
+      return {
+        error: `No se puede eliminar ${etiqueta}: tiene registros asociados. Desactívelo en su lugar.`,
+      };
     }
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   // RLS que deniega no devuelve error: devuelve cero filas.
   if (!data || data.length === 0) {
-    throw new Error(
-      `No se pudo eliminar ${etiqueta}: no tiene permisos para eliminarlo.`,
-    );
+    return {
+      error: `No se pudo eliminar ${etiqueta}: no tiene permisos para eliminarlo.`,
+    };
   }
+
+  return {};
 }

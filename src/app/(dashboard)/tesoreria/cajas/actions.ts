@@ -92,7 +92,14 @@ function bloquea(count: number | null): boolean {
   return count === null || count > 0;
 }
 
-export async function deleteCaja(id: string) {
+/**
+ * El error se **devuelve**, no se tira: en un build de producción Next redacta
+ * el mensaje de cualquier Error que escape de un server action y el cliente
+ * recibe "An error occurred in the Server Components render...". Devolverlo es
+ * lo único que hace llegar el motivo real al usuario, y es la convención que ya
+ * usa `src/app/login/actions.ts`.
+ */
+export async function deleteCaja(id: string): Promise<{ error?: string }> {
   const supabase = await createClient();
 
   // Todas las FKs entrantes son NO ACTION: se chequean antes para poder dar un
@@ -103,29 +110,40 @@ export async function deleteCaja(id: string) {
     .from("movimientos_fondos")
     .select("*", { count: "exact", head: true })
     .eq("caja_id", id);
-  if (movOrigenError) throw new Error(movOrigenError.message);
+  if (movOrigenError) {
+    console.error("deleteCaja/movimientos", movOrigenError);
+    return { error: movOrigenError.message };
+  }
 
   const { count: movDestinoCount, error: movDestinoError } = await supabase
     .from("movimientos_fondos")
     .select("*", { count: "exact", head: true })
     .eq("caja_destino_id", id);
-  if (movDestinoError) throw new Error(movDestinoError.message);
+  if (movDestinoError) {
+    console.error("deleteCaja/movimientos-destino", movDestinoError);
+    return { error: movDestinoError.message };
+  }
 
   if (bloquea(movOrigenCount) || bloquea(movDestinoCount)) {
-    throw new Error(
-      "No se puede eliminar la caja: tiene movimientos de fondos. Desactívela en su lugar.",
-    );
+    return {
+      error:
+        "No se puede eliminar la caja: tiene movimientos de fondos. Desactívela en su lugar.",
+    };
   }
 
   const { count: pvCount, error: pvError } = await supabase
     .from("depositos")
     .select("*", { count: "exact", head: true })
     .eq("caja_id", id);
-  if (pvError) throw new Error(pvError.message);
+  if (pvError) {
+    console.error("deleteCaja/puntos-venta", pvError);
+    return { error: pvError.message };
+  }
   if (bloquea(pvCount)) {
-    throw new Error(
-      "No se puede eliminar la caja: tiene puntos de venta vinculados. Desvincúlelos primero.",
-    );
+    return {
+      error:
+        "No se puede eliminar la caja: tiene puntos de venta vinculados. Desvincúlelos primero.",
+    };
   }
 
   const { data, error } = await supabase
@@ -135,21 +153,25 @@ export async function deleteCaja(id: string) {
     .select("id");
 
   if (error) {
+    console.error("deleteCaja/delete", error);
     if (error.code === "23503") {
-      throw new Error(
-        "No se puede eliminar la caja: tiene registros asociados. Desactívela en su lugar.",
-      );
+      return {
+        error:
+          "No se puede eliminar la caja: tiene registros asociados. Desactívela en su lugar.",
+      };
     }
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   // RLS que deniega no devuelve error: devuelve cero filas.
   if (!data || data.length === 0) {
-    throw new Error(
-      "No se pudo eliminar la caja: no existe o no tiene permisos para eliminarla.",
-    );
+    return {
+      error:
+        "No se pudo eliminar la caja: no existe o no tiene permisos para eliminarla.",
+    };
   }
 
   revalidatePath("/tesoreria/cajas");
   revalidatePath("/stock/puntos-venta");
+  return {};
 }
