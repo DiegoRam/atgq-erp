@@ -67,3 +67,46 @@ export async function updateItemVenta(id: string, formData: ItemVentaFormData) {
   }
   revalidatePath("/ventas/items");
 }
+
+export async function deleteItemVenta(id: string) {
+  const supabase = await createClient();
+
+  // `ventas_items.item_id` es NO ACTION: el borrado con historial fallaría con
+  // 23503, así que se chequea antes para dar un mensaje entendible. Se falla
+  // cerrado ante un `count` nulo; el 23503 de más abajo es la red final.
+  const { count, error: countError } = await supabase
+    .from("ventas_items")
+    .select("*", { count: "exact", head: true })
+    .eq("item_id", id);
+  if (countError) throw new Error(countError.message);
+  if (count === null || count > 0) {
+    throw new Error(
+      "No se puede eliminar el ítem: figura en ventas registradas. Desactívelo en su lugar.",
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("items_ventas")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error(
+        "No se puede eliminar el ítem: tiene registros asociados. Desactívelo en su lugar.",
+      );
+    }
+    throw new Error(error.message);
+  }
+
+  // RLS que deniega no devuelve error: devuelve cero filas.
+  if (!data || data.length === 0) {
+    throw new Error(
+      "No se pudo eliminar el ítem: no existe o no tiene permisos para eliminarlo.",
+    );
+  }
+
+  revalidatePath("/ventas/items");
+  revalidatePath("/ventas/nueva");
+}

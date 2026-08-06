@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { deleteUbicacion } from "../ubicaciones";
 import type { Deposito, DepositoFormData } from "@/types/stock";
 
 /**
@@ -109,6 +110,13 @@ export async function updatePuntoVenta(id: string, formData: DepositoFormData) {
     }
     throw new Error(error.message);
   }
+  revalidatePath("/stock/puntos-venta");
+  revalidatePath("/ventas/nueva");
+}
+
+export async function deletePuntoVenta(id: string) {
+  const supabase = await createClient();
+  await deleteUbicacion(supabase, id, "punto_venta");
   revalidatePath("/stock/puntos-venta");
   revalidatePath("/ventas/nueva");
 }
