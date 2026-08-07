@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StockItemCombobox } from "@/components/stock/StockItemCombobox";
 import {
   Select,
   SelectContent,
@@ -171,22 +172,20 @@ export default function TransferenciasStockPage() {
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-1">
-                <Label>Ítem</Label>
-                <Select
-                  value={itemId || ""}
-                  onValueChange={(v) => setValue("item_id", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar ítem..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {items.map((i) => (
-                      <SelectItem key={i.id} value={i.id}>
-                        {i.nombre} ({i.unidad})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="transf-item">Ítem</Label>
+                <StockItemCombobox
+                  id="transf-item"
+                  items={items}
+                  value={itemId || null}
+                  onChange={(v) =>
+                    setValue("item_id", v ?? "", { shouldValidate: true })
+                  }
+                  showUnidad
+                  className="w-full"
+                  placeholder="Seleccionar ítem..."
+                  searchPlaceholder="Buscar ítem..."
+                  emptyText="Sin ítems que coincidan"
+                />
                 {errors.item_id && (
                   <p className="text-xs text-destructive">{errors.item_id.message}</p>
                 )}

@@ -6,13 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -28,6 +21,7 @@ import {
   TODOS_PDV,
   pdvFiltro,
 } from "@/components/ventas/PuntoVentaFilter";
+import { ItemVentaCombobox } from "@/components/ventas/ItemVentaCombobox";
 import { getItemsVentasParaFiltro, getVentasPorItem } from "./actions";
 
 interface VentaPorItemRow {
@@ -40,13 +34,18 @@ interface VentaPorItemRow {
   subtotal: number;
 }
 
-type ItemOption = { id: string; nombre: string };
+type ItemOption = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  activo: boolean;
+};
 
 export default function ReportePorItemPage() {
   const [items, setItems] = useState<ItemOption[]>([]);
   const [data, setData] = useState<VentaPorItemRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [itemId, setItemId] = useState("");
+  const [itemId, setItemId] = useState<string | null>(null);
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [puntoVentaId, setPuntoVentaId] = useState(TODOS_PDV);
@@ -77,19 +76,19 @@ export default function ReportePorItemPage() {
       filters={
         <>
           <div className="space-y-1">
-            <Label className="text-xs">Ítem</Label>
-            <Select value={itemId} onValueChange={setItemId}>
-              <SelectTrigger className="w-56">
-                <SelectValue placeholder="Seleccionar ítem..." />
-              </SelectTrigger>
-              <SelectContent>
-                {items.map((i) => (
-                  <SelectItem key={i.id} value={i.id}>
-                    {i.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs" htmlFor="item-reporte">
+              Ítem
+            </Label>
+            <ItemVentaCombobox
+              id="item-reporte"
+              items={items}
+              value={itemId}
+              onChange={setItemId}
+              className="w-56"
+              placeholder="Seleccionar ítem..."
+              searchPlaceholder="Buscar ítem..."
+              emptyText="Sin ítems que coincidan"
+            />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Desde</Label>

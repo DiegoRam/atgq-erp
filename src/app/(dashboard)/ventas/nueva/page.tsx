@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, ShoppingCart, Check } from "lucide-react";
 import { formatCurrency, formatDateOnly, todayISO } from "@/lib/format";
+import { ItemVentaCombobox } from "@/components/ventas/ItemVentaCombobox";
 import { cn } from "@/lib/utils";
 import { CarritoVenta } from "@/components/ventas/CarritoVenta";
 import {
@@ -51,7 +52,7 @@ export default function NuevaVentaPage() {
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedItemId, setSelectedItemId] = useState("");
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [cantidad, setCantidad] = useState(1);
 
   // Client selection
@@ -142,7 +143,7 @@ export default function NuevaVentaPage() {
         },
       ]);
     }
-    setSelectedItemId("");
+    setSelectedItemId(null);
     setCantidad(1);
   }
 
@@ -259,19 +260,20 @@ export default function NuevaVentaPage() {
         <div className="space-y-4 lg:col-span-8">
           <div className="flex flex-col gap-3 rounded-md border bg-muted/30 p-4 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
-              <Label className="text-xs">Ítem</Label>
-              <Select value={selectedItemId} onValueChange={setSelectedItemId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar ítem..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {items.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.nombre} — {formatCurrency(Number(item.precio))}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs" htmlFor="item-venta">
+                Ítem
+              </Label>
+              <ItemVentaCombobox
+                id="item-venta"
+                items={items}
+                value={selectedItemId}
+                onChange={setSelectedItemId}
+                showPrecio
+                className="w-full"
+                placeholder="Seleccionar ítem..."
+                searchPlaceholder="Buscar ítem por nombre o descripción..."
+                emptyText="Sin ítems que coincidan"
+              />
             </div>
             <div className="w-24 space-y-1">
               <Label className="text-xs">Cantidad</Label>
