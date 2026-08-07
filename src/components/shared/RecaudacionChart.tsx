@@ -3,6 +3,7 @@
 import {
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -42,12 +43,19 @@ export function RecaudacionChart({ data }: RecaudacionChartProps) {
         <Tooltip
           {...chartTooltip}
           cursor={chartCursorBar}
-          formatter={(value) => [
-            formatCurrency(Number(value)),
-            "Recaudación neta",
-          ]}
+          formatter={(value) => [formatCurrency(Number(value)), "Resultado neto"]}
         />
-        <Bar dataKey="total" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} />
+        {/* Un mes con egresos > ingresos es una pérdida: pintarlo del mismo
+            verde que un superávit hacía que la barra bajo cero se leyera como
+            un resultado positivo más. */}
+        <Bar dataKey="total" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]}>
+          {data.map((d) => (
+            <Cell
+              key={d.mes}
+              fill={d.total < 0 ? "hsl(var(--destructive))" : CHART_COLORS[1]}
+            />
+          ))}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );

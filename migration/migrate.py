@@ -110,16 +110,25 @@ def ids(pg, table):
 # ==========================================================================
 # SOCIOS
 # ==========================================================================
+# Categorías cuyos socios NO cuentan como activos. En el legacy el estado real
+# del socio vive acá y no en FechaBaja, así que sin esto el KPI "Socios Activos"
+# del dashboard incluye las bajas. Las "-Ventanilla" sí cuentan como socios.
+CATEGORIAS_NO_ACTIVAS = {"BAJA", "INACTIVO"}
+
+
 def mig_categorias_sociales(my, pg):
     with my.cursor() as c:
         c.execute("SELECT * FROM CategoriasSocios")
         src = c.fetchall()
-    rows = [(nid("categorias_sociales", r["idCategorias"]),
-             s(r["Descripcion"]) or f"Categoria {r['idCategorias']}",
-             None, r["Monto"], bool(r["CategoriaActiva"])) for r in src]
+    rows = []
+    for r in src:
+        nombre = s(r["Descripcion"]) or f"Categoria {r['idCategorias']}"
+        rows.append((nid("categorias_sociales", r["idCategorias"]),
+                     nombre, None, r["Monto"], bool(r["CategoriaActiva"]),
+                     nombre.strip().upper() not in CATEGORIAS_NO_ACTIVAS))
     return copy(pg, "INSERT INTO categorias_sociales "
-                "(id,nombre,descripcion,monto_base,activa) VALUES %s "
-                "ON CONFLICT (id) DO NOTHING", rows)
+                "(id,nombre,descripcion,monto_base,activa,cuenta_como_activo) "
+                "VALUES %s ON CONFLICT (id) DO NOTHING", rows)
 
 
 def mig_metodos_cobranza(my, pg):

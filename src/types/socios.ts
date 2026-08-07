@@ -34,11 +34,20 @@ export interface SocioFormData {
   fecha_nacimiento?: string | null;
 }
 
+/**
+ * En los datos migrados del legacy el estado de un socio vive en dos lugares
+ * que no están sincronizados: `fecha_baja` y la categoría social (existe una
+ * categoría literal "BAJA"). "activos" exige ambas condiciones; "bajas" es el
+ * complemento exacto, así que activos + bajas === el padrón completo.
+ */
+export type EstadoSocio = "todos" | "activos" | "bajas";
+
 export interface SociosSearchParams {
   page: number;
   pageSize: number;
   search?: string;
   categoria_ids?: string[];
+  estado?: EstadoSocio;
   sort?: { id: string; desc: boolean } | null;
 }
 
@@ -48,12 +57,19 @@ export interface CategoriaCount {
   count: number;
 }
 
+export interface EstadoCount {
+  estado: "activos" | "bajas";
+  count: number;
+}
+
 export interface CategoriaSocial {
   id: string;
   nombre: string;
   descripcion: string | null;
   monto_base: number | null;
   activa: boolean;
+  /** Si sus socios cuentan como activos en el dashboard y en el filtro Estado */
+  cuenta_como_activo: boolean;
 }
 
 export interface MetodoCobranza {
@@ -110,6 +126,7 @@ export interface CategoriaSocialFormData {
   descripcion?: string | null;
   monto_base?: number | null;
   activa: boolean;
+  cuenta_como_activo: boolean;
 }
 
 export interface TipoCuotaFormData {
