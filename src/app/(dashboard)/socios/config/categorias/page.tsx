@@ -43,6 +43,17 @@ const columns: ColumnDef<CategoriaSocial>[] = [
     ),
   },
   {
+    accessorKey: "cuenta_como_activo",
+    header: "Cuenta como activo",
+    cell: ({ row }) => (
+      <Badge
+        variant={row.original.cuenta_como_activo ? "default" : "secondary"}
+      >
+        {row.original.cuenta_como_activo ? "Sí" : "No"}
+      </Badge>
+    ),
+  },
+  {
     id: "acciones",
     header: "Acciones",
     cell: ({ row, table }) => {

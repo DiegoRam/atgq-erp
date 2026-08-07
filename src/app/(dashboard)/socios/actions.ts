@@ -6,14 +6,26 @@ import type {
   SociosSearchParams,
   Socio,
   CategoriaCount,
+  EstadoCount,
   CategoriaSocial,
   MetodoCobranza,
   SocioFormData,
 } from "@/types/socios";
 
+/** Ids de las categorías que NO cuentan como socio activo (BAJA, Inactivo, …) */
+async function getCategoriasDeBaja(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("categorias_sociales")
+    .select("id")
+    .eq("cuenta_como_activo", false);
+  return (data ?? []).map((c) => c.id as string);
+}
+
 export async function getSocios(params: SociosSearchParams) {
   const supabase = await createClient();
-  const { page, pageSize, search, categoria_ids, sort } = params;
+  const { page, pageSize, search, categoria_ids, estado, sort } = params;
 
   let query = supabase
     .from("socios")
@@ -30,6 +42,24 @@ export async function getSocios(params: SociosSearchParams) {
 
   if (categoria_ids && categoria_ids.length > 0) {
     query = query.in("categoria_id", categoria_ids);
+  }
+
+  // Mismo predicado que get_dashboard_metrics()/get_estado_counts(), para que
+  // el KPI "Socios Activos" y este listado den exactamente el mismo número.
+  if (estado === "activos" || estado === "bajas") {
+    const bajaIds = await getCategoriasDeBaja(supabase);
+    if (estado === "activos") {
+      query = query.is("fecha_baja", null);
+      if (bajaIds.length > 0) {
+        query = query.not("categoria_id", "in", `(${bajaIds.join(",")})`);
+      }
+    } else if (bajaIds.length > 0) {
+      query = query.or(
+        `fecha_baja.not.is.null,categoria_id.in.(${bajaIds.join(",")})`,
+      );
+    } else {
+      query = query.not("fecha_baja", "is", null);
+    }
   }
 
   if (sort) {
@@ -83,6 +113,13 @@ export async function getCategoryCounts(): Promise<CategoriaCount[]> {
   const { data, error } = await supabase.rpc("get_category_counts");
   if (error) throw new Error(error.message);
   return (data ?? []) as CategoriaCount[];
+}
+
+export async function getEstadoCounts(): Promise<EstadoCount[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_estado_counts");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EstadoCount[];
 }
 
 export async function getCategorias(): Promise<CategoriaSocial[]> {

@@ -6,13 +6,21 @@ interface StatsCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
+  /** Aclara qué mide la tarjeta, para que el número sea comparable con la pantalla que enlaza */
+  hint?: string;
   trend?: {
     value: number;
     label: string;
   };
 }
 
-export function StatsCard({ title, value, icon: Icon, trend }: StatsCardProps) {
+export function StatsCard({
+  title,
+  value,
+  icon: Icon,
+  hint,
+  trend,
+}: StatsCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between p-3 pb-1 sm:p-6 sm:pb-2">
@@ -23,6 +31,11 @@ export function StatsCard({ title, value, icon: Icon, trend }: StatsCardProps) {
       </CardHeader>
       <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
         <div className="text-lg font-bold sm:text-2xl">{value}</div>
+        {hint && (
+          <p className="mt-1 text-xs leading-tight text-muted-foreground">
+            {hint}
+          </p>
+        )}
         {trend && (
           <p className="mt-1 text-xs text-muted-foreground">
             <span

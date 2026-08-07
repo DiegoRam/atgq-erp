@@ -8,21 +8,26 @@
 -- Categorías Sociales (14 tipos del sistema legacy)
 -- =========================
 
-INSERT INTO categorias_sociales (nombre, descripcion, monto_base, activa) VALUES
-  ('Activo', 'Socio activo regular', NULL, true),
-  ('Activo-Ventanilla', 'Socio activo ingresado por ventanilla', NULL, true),
-  ('Inactivo', 'Socio inactivo', NULL, true),
-  ('Cadete', 'Socio cadete (menor de edad)', NULL, true),
-  ('Cadete-Ventanilla', 'Socio cadete ingresado por ventanilla', NULL, true),
-  ('Vitalicio', 'Socio vitalicio', NULL, true),
-  ('Adherente', 'Socio adherente', NULL, true),
-  ('Adherente-Ventanilla', 'Socio adherente ingresado por ventanilla', NULL, true),
-  ('Honorario', 'Socio honorario', NULL, true),
-  ('Grupo Familia', 'Titular de grupo familiar', NULL, true),
-  ('Grupo Familiar-Ventanilla', 'Titular de grupo familiar por ventanilla', NULL, true),
-  ('Grupo Fliar. Miembro', 'Miembro de grupo familiar', NULL, true),
-  ('Grupo Fliar. Miembro-Ventanilla', 'Miembro de grupo familiar por ventanilla', NULL, true),
-  ('BAJA', 'Socio dado de baja', NULL, true)
+-- `activa` = la categoría está habilitada para usar.
+-- `cuenta_como_activo` = sus socios suman al KPI "Socios Activos" y al filtro
+-- Activos del padrón. Son cosas distintas: BAJA es una categoría habilitada
+-- (activa = true) cuyos socios NO son activos. Las variantes "-Ventanilla"
+-- sí cuentan como socios (decisión de negocio, 2026-08-06).
+INSERT INTO categorias_sociales (nombre, descripcion, monto_base, activa, cuenta_como_activo) VALUES
+  ('Activo', 'Socio activo regular', NULL, true, true),
+  ('Activo-Ventanilla', 'Socio activo ingresado por ventanilla', NULL, true, true),
+  ('Inactivo', 'Socio inactivo', NULL, true, false),
+  ('Cadete', 'Socio cadete (menor de edad)', NULL, true, true),
+  ('Cadete-Ventanilla', 'Socio cadete ingresado por ventanilla', NULL, true, true),
+  ('Vitalicio', 'Socio vitalicio', NULL, true, true),
+  ('Adherente', 'Socio adherente', NULL, true, true),
+  ('Adherente-Ventanilla', 'Socio adherente ingresado por ventanilla', NULL, true, true),
+  ('Honorario', 'Socio honorario', NULL, true, true),
+  ('Grupo Familia', 'Titular de grupo familiar', NULL, true, true),
+  ('Grupo Familiar-Ventanilla', 'Titular de grupo familiar por ventanilla', NULL, true, true),
+  ('Grupo Fliar. Miembro', 'Miembro de grupo familiar', NULL, true, true),
+  ('Grupo Fliar. Miembro-Ventanilla', 'Miembro de grupo familiar por ventanilla', NULL, true, true),
+  ('BAJA', 'Socio dado de baja', NULL, true, false)
 ON CONFLICT (nombre) DO NOTHING;
 
 -- =========================

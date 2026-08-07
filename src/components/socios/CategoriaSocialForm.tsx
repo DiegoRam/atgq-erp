@@ -52,6 +52,7 @@ export function CategoriaSocialForm({
         descripcion: categoria.descripcion,
         monto_base: categoria.monto_base,
         activa: categoria.activa,
+        cuenta_como_activo: categoria.cuenta_como_activo,
       });
     } else if (open) {
       reset({
@@ -59,6 +60,7 @@ export function CategoriaSocialForm({
         descripcion: null,
         monto_base: null,
         activa: true,
+        cuenta_como_activo: true,
       });
     }
   }, [open, categoria, reset]);
@@ -88,6 +90,7 @@ export function CategoriaSocialForm({
   }
 
   const activaValue = watch("activa");
+  const cuentaComoActivoValue = watch("cuenta_como_activo");
 
   return (
     <FormModal
@@ -136,6 +139,23 @@ export function CategoriaSocialForm({
             onCheckedChange={(v) => setValue("activa", v)}
           />
           <Label htmlFor="activa">Activa</Label>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="cuenta_como_activo"
+              checked={cuentaComoActivoValue ?? true}
+              onCheckedChange={(v) => setValue("cuenta_como_activo", v)}
+            />
+            <Label htmlFor="cuenta_como_activo">
+              Cuenta como socio activo
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Apagalo en categorías de baja o inactividad: sus socios quedan fuera
+            del KPI &ldquo;Socios Activos&rdquo; y del filtro Activos del padrón.
+          </p>
         </div>
       </div>
     </FormModal>

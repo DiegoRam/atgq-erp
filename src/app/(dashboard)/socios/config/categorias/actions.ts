@@ -23,6 +23,7 @@ export async function createCategoriaSocial(formData: CategoriaSocialFormData) {
     descripcion: formData.descripcion || null,
     monto_base: formData.monto_base ?? null,
     activa: formData.activa,
+    cuenta_como_activo: formData.cuenta_como_activo,
   });
   if (error) {
     if (error.code === "23505") {
@@ -58,6 +59,7 @@ export async function updateCategoriaSocial(id: string, formData: CategoriaSocia
       descripcion: formData.descripcion || null,
       monto_base: formData.monto_base ?? null,
       activa: formData.activa,
+      cuenta_como_activo: formData.cuenta_como_activo,
     })
     .eq("id", id);
 
