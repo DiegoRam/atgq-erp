@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { revalidatePath } from "next/cache";
 import type { Deposito, StockItem, StockItemFormData } from "@/types/stock";
 
@@ -20,26 +21,34 @@ export async function getUbicacionesParaStockInicial(): Promise<Deposito[]> {
 export async function getStockItems(): Promise<StockItem[]> {
   const supabase = await createClient();
 
-  const { data: items, error } = await supabase
-    .from("stock_items")
-    .select("*")
-    .order("nombre");
+  const items = await fetchAllRows<StockItem>((from, to) =>
+    supabase
+      .from("stock_items")
+      .select("*")
+      .order("nombre")
+      .order("id")
+      .range(from, to),
+  );
 
-  if (error) throw new Error(error.message);
-  if (!items || items.length === 0) return [];
+  if (items.length === 0) return [];
 
-  // Get SUM(cantidad) per item from stock_inventario
-  const itemIds = items.map((i) => i.id);
-  const { data: inventario } = await supabase
-    .from("stock_inventario")
-    .select("item_id, cantidad")
-    .in("item_id", itemIds);
+  // Get SUM(cantidad) per item from stock_inventario.
+  // `stock_inventario` tiene una fila por (ítem, ubicación), así que supera las
+  // 1000 mucho antes que el catálogo: sin paginar, los ítems que caen del otro
+  // lado del corte muestran `stock_total` en 0 o entendido, que en la pantalla
+  // de Inventario se lee como stock real.
+  const inventario = await fetchAllRows<{ item_id: string; cantidad: number }>(
+    (from, to) =>
+      supabase
+        .from("stock_inventario")
+        .select("item_id, cantidad")
+        .order("id")
+        .range(from, to),
+  );
 
   const totals: Record<string, number> = {};
-  if (inventario) {
-    for (const row of inventario) {
-      totals[row.item_id] = (totals[row.item_id] ?? 0) + row.cantidad;
-    }
+  for (const row of inventario) {
+    totals[row.item_id] = (totals[row.item_id] ?? 0) + row.cantidad;
   }
 
   return items.map((i) => ({

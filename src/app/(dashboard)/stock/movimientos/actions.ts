@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import type {
   MovimientoStock,
   MovimientosStockSearchParams,
@@ -44,12 +45,14 @@ export async function getMovimientosStock(
 
 export async function getItemsParaFiltro(): Promise<StockItem[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("stock_items")
-    .select("*")
-    .order("nombre");
-  if (error) throw new Error(error.message);
-  return (data ?? []) as StockItem[];
+  return fetchAllRows<StockItem>((from, to) =>
+    supabase
+      .from("stock_items")
+      .select("*")
+      .order("nombre")
+      .order("id")
+      .range(from, to),
+  );
 }
 
 export async function getDepositosParaFiltro(): Promise<Deposito[]> {

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { revalidatePath } from "next/cache";
 import type {
   Deposito,
@@ -21,13 +22,15 @@ export async function getDepositosActivos(): Promise<Deposito[]> {
 
 export async function getStockItemsActivos(): Promise<StockItem[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("stock_items")
-    .select("*")
-    .eq("activo", true)
-    .order("nombre");
-  if (error) throw new Error(error.message);
-  return (data ?? []) as StockItem[];
+  return fetchAllRows<StockItem>((from, to) =>
+    supabase
+      .from("stock_items")
+      .select("*")
+      .eq("activo", true)
+      .order("nombre")
+      .order("id")
+      .range(from, to),
+  );
 }
 
 export async function getStockActual(

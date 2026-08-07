@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { revalidatePath } from "next/cache";
 import { nuevaVentaSchema } from "@/lib/schemas/ventas";
 import type {
@@ -25,13 +26,15 @@ export async function getPuntosVentaActivos(): Promise<Deposito[]> {
 
 export async function getItemsVentasActivos(): Promise<ItemVenta[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("items_ventas")
-    .select("*, stock_item:stock_items(id, nombre)")
-    .eq("activo", true)
-    .order("nombre");
-  if (error) throw new Error(error.message);
-  return (data ?? []) as ItemVenta[];
+  return fetchAllRows<ItemVenta>((from, to) =>
+    supabase
+      .from("items_ventas")
+      .select("*, stock_item:stock_items(id, nombre)")
+      .eq("activo", true)
+      .order("nombre")
+      .order("id")
+      .range(from, to),
+  );
 }
 
 export async function getMetodosPago() {

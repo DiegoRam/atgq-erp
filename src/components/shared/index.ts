@@ -1,3 +1,5 @@
+export { Combobox } from "./Combobox";
+export type { ComboboxOption } from "./Combobox";
 export { DataTable } from "./DataTable";
 export { FacetFilter } from "./FacetFilter";
 export { FormModal } from "./FormModal";

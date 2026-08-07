@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import type { ItemVenta } from "@/types/ventas";
 
 interface VentaPorItemRow {
@@ -13,16 +14,21 @@ interface VentaPorItemRow {
   subtotal: number;
 }
 
+/** Sin filtrar por `activo`: los reportes históricos necesitan los discontinuados. */
 export async function getItemsVentasParaFiltro(): Promise<
-  Pick<ItemVenta, "id" | "nombre">[]
+  Pick<ItemVenta, "id" | "nombre" | "descripcion" | "activo">[]
 > {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("items_ventas")
-    .select("id, nombre")
-    .order("nombre");
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  return fetchAllRows<
+    Pick<ItemVenta, "id" | "nombre" | "descripcion" | "activo">
+  >((from, to) =>
+    supabase
+      .from("items_ventas")
+      .select("id, nombre, descripcion, activo")
+      .order("nombre")
+      .order("id")
+      .range(from, to),
+  );
 }
 
 export async function getVentasPorItem(params: {
@@ -33,15 +39,23 @@ export async function getVentasPorItem(params: {
 }): Promise<VentaPorItemRow[]> {
   const supabase = await createClient();
 
-  const query = supabase
-    .from("ventas_items")
-    .select(
-      "cantidad, precio_unitario, subtotal, venta:ventas!inner(id, fecha, anulada, punto_venta_id, no_socio_nombre, punto_venta:depositos!punto_venta_id(nombre), cliente:clientes(apellido, nombre), socio:socios(nro_socio, apellido, nombre))",
-    )
-    .eq("item_id", params.item_id);
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  // Sin paginar, un ítem de alta rotación pasa las 1000 líneas y los totales del
+  // reporte —unidades y monto, sumados en JS más abajo— quedan cortos sin avisar.
+  const data = await fetchAllRows<{
+    cantidad: number;
+    precio_unitario: number;
+    subtotal: number;
+    venta: unknown;
+  }>((from, to) =>
+    supabase
+      .from("ventas_items")
+      .select(
+        "cantidad, precio_unitario, subtotal, venta:ventas!inner(id, fecha, anulada, punto_venta_id, no_socio_nombre, punto_venta:depositos!punto_venta_id(nombre), cliente:clientes(apellido, nombre), socio:socios(nro_socio, apellido, nombre))",
+      )
+      .eq("item_id", params.item_id)
+      .order("id")
+      .range(from, to),
+  );
 
   // Filter by date and anulada in JS (needed because of nested joins)
   const results: VentaPorItemRow[] = [];

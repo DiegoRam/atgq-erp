@@ -8,13 +8,7 @@ import { FormModal } from "@/components/shared/FormModal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { StockItemCombobox } from "@/components/stock/StockItemCombobox";
 import { itemVentaSchema, type ItemVentaSchemaType } from "@/lib/schemas/ventas";
 import {
   createItemVenta,
@@ -149,25 +143,28 @@ export function ItemVentaForm({
         </div>
 
         <div className="space-y-1">
-          <Label>Stock vinculado (opcional)</Label>
-          <Select
-            value={stockItemId ?? "none"}
-            onValueChange={(v) =>
-              setValue("stock_item_id", v === "none" ? null : v)
+          <Label htmlFor="stock-vinculado">Stock vinculado (opcional)</Label>
+          {/*
+            `missingLabel` recién cuando la lista llegó: `stockItems` se carga
+            async y `reset()` escribe `stock_item_id` sincrónicamente, así que
+            antes de eso un vínculo perfectamente válido se vería como "no
+            disponible" durante el primer render.
+          */}
+          <StockItemCombobox
+            id="stock-vinculado"
+            items={stockItems}
+            value={stockItemId ?? null}
+            onChange={(v) => setValue("stock_item_id", v)}
+            clearLabel="Sin vínculo"
+            placeholder="Sin vínculo"
+            searchPlaceholder="Buscar ítem de stock..."
+            emptyText="Sin ítems que coincidan"
+            missingLabel={
+              stockItems.length > 0 ? "(ítem no disponible)" : undefined
             }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sin vínculo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Sin vínculo</SelectItem>
-              {stockItems.map((si) => (
-                <SelectItem key={si.id} value={si.id}>
-                  {si.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            className="w-full"
+            modal
+          />
           <p className="text-xs text-muted-foreground">
             Al vender, se descontará stock automáticamente
           </p>

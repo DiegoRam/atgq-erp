@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/DataTable";
+import { StockItemCombobox } from "@/components/stock/StockItemCombobox";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,10 @@ import {
   type Deposito,
 } from "@/types/stock";
 
-/** Los Select usan "all" como opción "sin filtro" */
+/**
+ * Los `<Select>` de Ubicación y Tipo usan "all" como opción "sin filtro", porque
+ * Radix no acepta `""` como valor. El combo de Ítem no lo necesita: entrega `null`.
+ */
 const sinFiltro = (v: string) => (v && v !== "all" ? v : undefined);
 
 const PAGE_SIZE = 50;
@@ -107,7 +111,7 @@ export default function MovimientosStockPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
-  const [itemId, setItemId] = useState("");
+  const [itemId, setItemId] = useState<string | null>(null);
   const [depositoId, setDepositoId] = useState("");
   const [tipo, setTipo] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
@@ -132,7 +136,7 @@ export default function MovimientosStockPage() {
       const params: MovimientosStockSearchParams = {
         page,
         pageSize: PAGE_SIZE,
-        item_id: sinFiltro(itemId),
+        item_id: itemId ?? undefined,
         deposito_id: sinFiltro(depositoId),
         tipo: sinFiltro(tipo),
         fecha_desde: fechaDesde || undefined,
@@ -185,20 +189,20 @@ export default function MovimientosStockPage() {
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">Ítem</Label>
-          <Select value={itemId} onValueChange={setItemId}>
-            <SelectTrigger className="w-52">
-              <SelectValue placeholder="Todos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {items.map((i) => (
-                <SelectItem key={i.id} value={i.id}>
-                  {i.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-xs" htmlFor="filtro-item">
+            Ítem
+          </Label>
+          <StockItemCombobox
+            id="filtro-item"
+            items={items}
+            value={itemId}
+            onChange={setItemId}
+            clearLabel="Todos"
+            placeholder="Todos"
+            searchPlaceholder="Buscar ítem..."
+            emptyText="Sin ítems que coincidan"
+            className="w-52"
+          />
         </div>
 
         <div className="space-y-1">

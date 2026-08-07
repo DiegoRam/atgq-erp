@@ -1,30 +1,34 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { revalidatePath } from "next/cache";
 import type { ItemVenta, ItemVentaFormData } from "@/types/ventas";
 import type { StockItem } from "@/types/stock";
 
 export async function getItemsVentas(): Promise<ItemVenta[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("items_ventas")
-    .select("*, stock_item:stock_items(id, nombre)")
-    .order("nombre");
-
-  if (error) throw new Error(error.message);
-  return (data ?? []) as ItemVenta[];
+  return fetchAllRows<ItemVenta>((from, to) =>
+    supabase
+      .from("items_ventas")
+      .select("*, stock_item:stock_items(id, nombre)")
+      .order("nombre")
+      .order("id")
+      .range(from, to),
+  );
 }
 
 export async function getStockItemsForSelect(): Promise<StockItem[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("stock_items")
-    .select("*")
-    .eq("activo", true)
-    .order("nombre");
-  if (error) throw new Error(error.message);
-  return (data ?? []) as StockItem[];
+  return fetchAllRows<StockItem>((from, to) =>
+    supabase
+      .from("stock_items")
+      .select("*")
+      .eq("activo", true)
+      .order("nombre")
+      .order("id")
+      .range(from, to),
+  );
 }
 
 export async function createItemVenta(formData: ItemVentaFormData) {
