@@ -89,6 +89,7 @@ docker run --rm --network atgq-migra \
 | `usuario_id` (ventas/movs, NOT NULL) | usuario de sistema `MIGRATION_USER_ID` |
 | Turnos de clientes (no socios) | **omitidos** (`socio_id` es NOT NULL) |
 | `ItemsVentas` | → `items_ventas`; si `DescuentaStock=1`, además `stock_items` + inventario |
+| Ítems `(DESUSO)` / `No Usar` | → `activo = false`. El legacy no tenía flag de baja: se renombraba el ítem. El nombre se conserva |
 | Tesorería `tipo` E/S | E→ingreso, S→egreso; `monto = abs(importe)` |
 | Movimientos sin categoría | categoría fallback "Sin categoría (migración)" |
 | `importe = 0` | omitidos (`monto > 0` CHECK) |
