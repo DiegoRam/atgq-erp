@@ -346,12 +346,19 @@ def mig_items(my, pg):
     stock_rows, item_rows = [], []
     for r in src:
         nom = s(r["nombre"]) or f"Item {r['idItem']}"
+        # El legacy no tenía columna `activo`: la baja de un ítem se marcaba
+        # renombrándolo con "(DESUSO)" (o "No Usar"). Se traduce al flag real,
+        # conservando el nombre porque las ventas históricas lo referencian.
+        # Mantener los marcadores en sync con la migración
+        # supabase/migrations/20260808000001_desactivar_items_desuso.sql, que
+        # corrige las filas ya importadas (acá los INSERT son DO NOTHING).
+        act = not any(k in nom.upper() for k in ("DESUSO", "NO USAR"))
         stk = None
         if r["DescuentaStock"]:
             stk = nid("stock_items", r["idItem"])
-            stock_rows.append((stk, nom, None, "unidad", True))
+            stock_rows.append((stk, nom, None, "unidad", act))
         item_rows.append((nid("items_ventas", r["idItem"]), nom, None,
-                          r["ValorSocio"] or 0, True, stk))
+                          r["ValorSocio"] or 0, act, stk))
     copy(pg, "INSERT INTO stock_items (id,nombre,descripcion,unidad,activo) "
          "VALUES %s ON CONFLICT (id) DO NOTHING", stock_rows)
     n = copy(pg, "INSERT INTO items_ventas (id,nombre,descripcion,precio,activo,"
