@@ -1,0 +1,58 @@
+# Etiqueta cada PR según su autoría (agente o persona).
+#
+# Deliberadamente `pull_request` y NO `pull_request_target`.
+# Este repo es público y el tagger lee tres strings que controla quien abre el
+# PR: nombre de rama, cuerpo del PR y mensajes de commit. `pull_request_target`
+# le daría a ese job un token de escritura y acceso a los secrets — la clase de
+# CVE canónica de GitHub Actions. Los PRs desde forks reciben un token de solo
+# lectura, así que acá se saltean y los etiqueta después el workflow programado,
+# que corre en el contexto de la rama base. Hoy no hay ningún fork, así que no
+# se pierde nada y desaparece toda la clase de riesgo.
+name: Agent PR tagger
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+
+permissions:
+  contents: read
+  issues: write # crear las etiquetas del taxonomy (POST /repos/:o/:r/labels)
+  pull-requests: write # adjuntarlas al PR
+
+concurrency:
+  group: agent-tagger-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  tag:
+    # Fork => token de solo lectura. Se saltea en vez de fallar en rojo.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Se hace checkout de la BASE, no del head del PR. Por defecto este job
+      # ejecutaría los scripts en su versión del PR, con token de escritura:
+      # con forks excluidos eso no da más de lo que ya tiene quien puede pushear
+      # al repo, pero hace que la propiedad de seguridad dependa de "sólo gente
+      # de confianza abre PRs" en vez del checkout. Corriendo siempre el código
+      # de la rama base, el tagger (y el `labels.json` que lee) son los de
+      # trunk, no los que trae el PR.
+      - name: Checkout de la rama base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      # Lo único que cruza el shell es el NÚMERO de PR, que lo pone GitHub.
+      # El cuerpo, la rama y los commits los re-consulta el script por la API.
+      - name: Detectar y etiquetar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/agent-metrics/tag-pr.mjs --pr "$PR_NUMBER"

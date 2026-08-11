@@ -52,3 +52,6 @@ docs/backup.sql
 # package-lock.json — pero no mantener los dos.
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# Reportes de agent-metrics (se suben como artefacto de Actions, no se versionan)
+.metrics/

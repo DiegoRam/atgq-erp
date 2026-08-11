@@ -1,0 +1,81 @@
+# Reporte semanal de métricas de entrega + sync con el tablero de Projects v2.
+#
+# También hace de red de seguridad del tagger: corre en el contexto de la rama
+# base, así que puede etiquetar PRs de forks (que el tagger saltea a propósito).
+#
+# El primer uso debería ser manual:
+#   gh workflow run agent-delivery-metrics.yml -f since=all -f dry_run=true
+# y recién después el backfill en vivo con -f dry_run=false -f retag=true.
+name: Agent delivery metrics
+
+on:
+  schedule:
+    - cron: '0 12 * * 1' # lunes 12:00 UTC = 09:00 ART
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'Ventana: "all", "90d" o una fecha ISO'
+        default: '90d'
+      dry_run:
+        description: 'Calcular sin escribir nada'
+        type: boolean
+        default: true
+      retag:
+        description: 'Backfill de etiquetas sobre los PRs ya mergeados'
+        type: boolean
+        default: false
+      project_number:
+        description: 'Número del tablero (vacío = usar la variable del repo)'
+        default: ''
+
+permissions:
+  contents: read
+  issues: write # issue de seguimiento + creación de etiquetas en el retag
+  pull-requests: write # backfill de etiquetas
+  deployments: read # señal de fallo por deploy
+  statuses: read # respaldo por status de commit de Vercel
+
+concurrency:
+  group: agent-delivery-metrics
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Recolectar y reportar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Puede venir vacío: el script degrada y sigue por el job summary.
+          PROJECTS_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          SINCE: ${{ inputs.since || '90d' }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          RETAG: ${{ inputs.retag }}
+          PROJECT_NUMBER: ${{ inputs.project_number || vars.METRICS_PROJECT_NUMBER }}
+        run: node scripts/agent-metrics/report.mjs
+
+      # El reporte NO se commitea a main: necesitaría `contents: write`, dejaría
+      # un commit de bot por corrida, y esos commits contaminarían justo el
+      # historial que el script analiza (alimentando la heurística de hotfix).
+      - name: Subir artefacto
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: agent-delivery-metrics
+          path: |
+            .metrics/report.md
+            .metrics/metrics.json
+          retention-days: 90
+          if-no-files-found: warn
