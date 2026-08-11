@@ -1,0 +1,32 @@
+[
+  {
+    "name": "agent-authored",
+    "color": "5319e7",
+    "description": "PR cuyo código fue escrito por un agente de IA (detectado automáticamente)"
+  },
+  {
+    "name": "human-authored",
+    "color": "0e8a16",
+    "description": "PR escrito por una persona; no se detectó ninguna señal de agente"
+  },
+  {
+    "name": "agent:trailer",
+    "color": "c5b3f0",
+    "description": "Señal: trailer Co-Authored-By / Generated-with en un commit del PR"
+  },
+  {
+    "name": "agent:branch",
+    "color": "c5b3f0",
+    "description": "Señal: el nombre de la rama coincide con un prefijo de agente (claude/, agent/, ...)"
+  },
+  {
+    "name": "agent:marker",
+    "color": "c5b3f0",
+    "description": "Señal: marcador agent-authored en el cuerpo del PR"
+  },
+  {
+    "name": "agent:actor",
+    "color": "c5b3f0",
+    "description": "Señal: el PR lo abrió una cuenta de agente conocida o una GitHub App"
+  }
+]
