@@ -69,6 +69,9 @@ export default function NuevaVentaPage() {
   // State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successDialog, setSuccessDialog] = useState(false);
+  // Total que devolvió la RPC, no el del carrito: con dos tarifas un catálogo
+  // stale puede hacer que difieran, y conviene que eso se vea.
+  const [totalRegistrado, setTotalRegistrado] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -118,6 +121,16 @@ export default function NuevaVentaPage() {
     return () => clearTimeout(timeout);
   }, [socioSearch, tipoCliente, selectedSocioId, searchSocios]);
 
+  /**
+   * Tarifa vigente según el toggle. Espeja el CASE de `registrar_venta`: si
+   * divergen, el cajero cotiza un total y la base cobra otro.
+   */
+  const precioVigente = useCallback(
+    (item: Pick<ItemVenta, "precio" | "precio_no_socio">) =>
+      Number(tipoCliente === "socio" ? item.precio : item.precio_no_socio),
+    [tipoCliente],
+  );
+
   function handleAddItem() {
     if (!selectedItemId) return;
     const item = items.find((i) => i.id === selectedItemId);
@@ -131,20 +144,60 @@ export default function NuevaVentaPage() {
         updated[existing].cantidad * updated[existing].precio_unitario;
       setCart(updated);
     } else {
+      const precio = precioVigente(item);
       setCart([
         ...cart,
         {
           item_id: item.id,
           nombre: item.nombre,
-          precio_unitario: Number(item.precio),
+          precio_unitario: precio,
           cantidad,
-          subtotal: Number(item.precio) * cantidad,
+          subtotal: precio * cantidad,
           stock_item_id: item.stock_item_id,
         },
       ]);
     }
     setSelectedItemId(null);
     setCantidad(1);
+  }
+
+  /**
+   * Cambiar de comprador reprecia lo que ya está en el carrito: si no, el
+   * total en pantalla no sería el que va a cobrar `registrar_venta`.
+   */
+  function cambiarTipoCliente(nuevo: "socio" | "no_socio") {
+    if (nuevo === tipoCliente) return; // sin toast al re-clickear el activo
+    setTipoCliente(nuevo);
+    if (nuevo === "socio") {
+      limpiarNoSocio();
+    } else {
+      setSelectedSocioId("");
+      setSocioSearch("");
+      setSocioResults([]);
+    }
+
+    if (cart.length === 0) return;
+    let cambio = false;
+    // Se lee `nuevo` y no `precioVigente`: esa closure todavía tiene el
+    // `tipoCliente` viejo durante este handler.
+    const recalculado = cart.map((c) => {
+      const item = items.find((i) => i.id === c.item_id);
+      if (!item) return c;
+      const precio = Number(
+        nuevo === "socio" ? item.precio : item.precio_no_socio,
+      );
+      if (!Number.isFinite(precio) || precio === c.precio_unitario) return c;
+      cambio = true;
+      return { ...c, precio_unitario: precio, subtotal: precio * c.cantidad };
+    });
+    if (cambio) {
+      setCart(recalculado);
+      toast.info(
+        `Precios del carrito actualizados a tarifa de ${
+          nuevo === "socio" ? "Socio" : "No Socio"
+        }`,
+      );
+    }
   }
 
   function handleRemoveItem(index: number) {
@@ -225,6 +278,7 @@ export default function NuevaVentaPage() {
             .join(", ")}`,
         );
       }
+      setTotalRegistrado(Number(result.venta_total));
       setSuccessDialog(true);
     } catch (err) {
       toast.error(
@@ -269,6 +323,7 @@ export default function NuevaVentaPage() {
                 value={selectedItemId}
                 onChange={setSelectedItemId}
                 showPrecio
+                tipoPrecio={tipoCliente}
                 className="w-full"
                 placeholder="Seleccionar ítem..."
                 searchPlaceholder="Buscar ítem por nombre o descripción..."
@@ -328,22 +383,14 @@ export default function NuevaVentaPage() {
                 <Button
                   variant={tipoCliente === "socio" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => {
-                    setTipoCliente("socio");
-                    limpiarNoSocio();
-                  }}
+                  onClick={() => cambiarTipoCliente("socio")}
                 >
                   Socio
                 </Button>
                 <Button
                   variant={tipoCliente === "no_socio" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => {
-                    setTipoCliente("no_socio");
-                    setSelectedSocioId("");
-                    setSocioSearch("");
-                    setSocioResults([]);
-                  }}
+                  onClick={() => cambiarTipoCliente("no_socio")}
                 >
                   No Socio
                 </Button>
@@ -489,7 +536,7 @@ export default function NuevaVentaPage() {
               Venta registrada exitosamente
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Total: {formatCurrency(total)}
+              Total: {formatCurrency(totalRegistrado)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

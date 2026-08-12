@@ -38,8 +38,13 @@ const columns: ColumnDef<ItemVenta>[] = [
   },
   {
     accessorKey: "precio",
-    header: "Precio",
+    header: "Precio Socio",
     cell: ({ row }) => formatCurrency(Number(row.original.precio)),
+  },
+  {
+    accessorKey: "precio_no_socio",
+    header: "Precio No Socio",
+    cell: ({ row }) => formatCurrency(Number(row.original.precio_no_socio)),
   },
   {
     id: "stock_item",

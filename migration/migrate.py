@@ -341,7 +341,8 @@ def mig_clientes(my, pg):
 def mig_items(my, pg):
     """ItemsVentas -> items_ventas (+ stock_items si DescuentaStock=1)."""
     with my.cursor() as c:
-        c.execute("SELECT idItem,nombre,ValorSocio,DescuentaStock FROM ItemsVentas")
+        c.execute("SELECT idItem,nombre,ValorSocio,ValorNoSocio,DescuentaStock "
+                  "FROM ItemsVentas")
         src = c.fetchall()
     stock_rows, item_rows = [], []
     for r in src:
@@ -357,12 +358,18 @@ def mig_items(my, pg):
         if r["DescuentaStock"]:
             stk = nid("stock_items", r["idItem"])
             stock_rows.append((stk, nom, None, "unidad", act))
+        # Las DOS tarifas: el legacy siempre las tuvo y la primera versión de
+        # este importador descartaba ValorNoSocio. La columna
+        # `items_ventas.precio_no_socio` es NOT NULL desde la migración
+        # supabase/migrations/20260812000001_items_ventas_precio_no_socio.sql,
+        # que además recupera el dato en las bases ya importadas.
         item_rows.append((nid("items_ventas", r["idItem"]), nom, None,
-                          r["ValorSocio"] or 0, act, stk))
+                          r["ValorSocio"] or 0, r["ValorNoSocio"] or 0, act, stk))
     copy(pg, "INSERT INTO stock_items (id,nombre,descripcion,unidad,activo) "
          "VALUES %s ON CONFLICT (id) DO NOTHING", stock_rows)
-    n = copy(pg, "INSERT INTO items_ventas (id,nombre,descripcion,precio,activo,"
-             "stock_item_id) VALUES %s ON CONFLICT (id) DO NOTHING", item_rows)
+    n = copy(pg, "INSERT INTO items_ventas (id,nombre,descripcion,precio,"
+             "precio_no_socio,activo,stock_item_id) "
+             "VALUES %s ON CONFLICT (id) DO NOTHING", item_rows)
     print(f"    items_ventas={n} stock_items={len(stock_rows)}")
     return n
 

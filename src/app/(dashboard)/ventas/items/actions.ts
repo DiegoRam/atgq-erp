@@ -37,6 +37,7 @@ export async function createItemVenta(formData: ItemVentaFormData) {
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
     precio: formData.precio,
+    precio_no_socio: formData.precio_no_socio,
     activo: formData.activo,
     stock_item_id: formData.stock_item_id || null,
   });
@@ -58,6 +59,7 @@ export async function updateItemVenta(id: string, formData: ItemVentaFormData) {
       nombre: formData.nombre,
       descripcion: formData.descripcion || null,
       precio: formData.precio,
+      precio_no_socio: formData.precio_no_socio,
       activo: formData.activo,
       stock_item_id: formData.stock_item_id || null,
     })
