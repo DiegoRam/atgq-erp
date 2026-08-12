@@ -10,7 +10,7 @@ name: Agent delivery metrics
 
 on:
   schedule:
-    - cron: '0 12 * * 1' # lunes 12:00 UTC = 09:00 ART
+    - cron: '0 12 * * *' # lunes 12:00 UTC = 09:00 ART
   workflow_dispatch:
     inputs:
       since:
