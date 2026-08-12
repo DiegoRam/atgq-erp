@@ -27,18 +27,43 @@ async function requireAdmin() {
   return user;
 }
 
-export async function getConfiguracion(): Promise<Configuracion> {
-  await requireAdmin();
-  const supabase = await createClient();
+/**
+ * Devuelve el error en vez de tirarlo, igual que el resto de este archivo.
+ *
+ * No es cosmético: cuando esta pantalla salió a producción antes de que se
+ * aplicara la migración `20260812000003`, la tabla no existía y el usuario vio
+ * el texto genérico de Next ("An error occurred in the Server Components
+ * render… omitted in production builds") en vez de "relation configuracion does
+ * not exist". El motivo real —una migración pendiente— quedó invisible
+ * justamente en el entorno donde no se puede abrir una consola.
+ */
+export async function getConfiguracion(): Promise<{
+  data?: Configuracion;
+  error?: string;
+}> {
+  try {
+    await requireAdmin();
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("configuracion")
-    .select("*")
-    .eq("id", 1)
-    .single();
+    const { data, error } = await supabase
+      .from("configuracion")
+      .select("*")
+      .eq("id", 1)
+      .single();
 
-  if (error) throw new Error(error.message);
-  return { ...data, recargo_no_socio_pct: Number(data.recargo_no_socio_pct) };
+    if (error) {
+      console.error("getConfiguracion", error);
+      return { error: error.message };
+    }
+    return {
+      data: { ...data, recargo_no_socio_pct: Number(data.recargo_no_socio_pct) },
+    };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error ? err.message : "Error al cargar la configuración",
+    };
+  }
 }
 
 /**
