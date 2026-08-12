@@ -45,22 +45,23 @@ export default function ConfiguracionPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await getConfiguracion();
+      const { data, error } = await getConfiguracion();
+      if (error || !data) {
+        const msg = error ?? "Error al cargar la configuración";
+        // Se guarda además del toast: sin esto la tarjeta de reconstrucción
+        // quedaba afirmando "Nunca se ejecutó" y con el botón destructivo
+        // habilitado (isDirty es false porque reset() nunca corrió), o sea que
+        // un fallo de carga se veía igual que una configuración sana.
+        setLoadError(msg);
+        setConfig(null);
+        toast.error(msg);
+        return;
+      }
       setConfig(data);
       setLoadError(null);
       // reset() y no defaultValues: es lo que además pone isDirty en false
       // después de guardar o de recalcular.
       reset({ recargo_no_socio_pct: data.recargo_no_socio_pct });
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Error al cargar la configuración";
-      // Se guarda además del toast: sin esto la tarjeta de reconstrucción
-      // quedaba afirmando "Nunca se ejecutó" y con el botón destructivo
-      // habilitado (isDirty es false porque reset() nunca corrió), o sea que un
-      // fallo de carga se veía igual que una configuración sana.
-      setLoadError(msg);
-      setConfig(null);
-      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
