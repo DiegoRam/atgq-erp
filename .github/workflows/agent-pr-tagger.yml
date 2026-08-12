@@ -30,13 +30,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # Se hace checkout de la BASE, no del head del PR. Por defecto este job
-      # ejecutaría los scripts en su versión del PR, con token de escritura:
-      # con forks excluidos eso no da más de lo que ya tiene quien puede pushear
-      # al repo, pero hace que la propiedad de seguridad dependa de "sólo gente
-      # de confianza abre PRs" en vez del checkout. Corriendo siempre el código
-      # de la rama base, el tagger (y el `labels.json` que lee) son los de
-      # trunk, no los que trae el PR.
+      # Se hace checkout de la BASE, no del head del PR: así el tagger y el
+      # `labels.json` que lee son los de trunk y no los que trae el PR.
+      #
+      # Alcance real de esto, para no confundir a quien lo lea después: en un
+      # evento `pull_request` GitHub toma el PROPIO YAML del workflow del head
+      # del PR, así que quien pueda pushear una rama puede reescribir este
+      # archivo y el checkout de la base no lo impide. La defensa de fondo
+      # sigue siendo que los forks están excluidos y que sólo colaboradores
+      # pueden pushear — o sea, nadie gana privilegios que no tuviera ya.
+      # El checkout de la base reduce superficie (los .mjs y el taxonomy no son
+      # controlables desde el PR), no cierra la clase entera.
       - name: Checkout de la rama base
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,9 +52,26 @@ jobs:
         with:
           node-version: '24'
 
+      # Corolario de hacer checkout de la base: el tagger sólo existe si ya está
+      # MERGEADO. Mientras el sistema vive en una rama sin mergear —o en un PR
+      # que lo modifica— la base no lo tiene, y `node` moría con MODULE_NOT_FOUND
+      # dejando el check en rojo en PRs que no tienen nada malo. Se saltea con un
+      # aviso: el etiquetado no es un gate, y el workflow programado hace el
+      # backfill de lo que se haya perdido.
+      - name: ¿Está el tagger en la rama base?
+        id: check
+        run: |
+          if [ -f scripts/agent-metrics/tag-pr.mjs ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::El tagger todavía no está en la rama base ($GITHUB_SHA); se omite. Se etiqueta solo una vez mergeado a la rama por defecto."
+          fi
+
       # Lo único que cruza el shell es el NÚMERO de PR, que lo pone GitHub.
       # El cuerpo, la rama y los commits los re-consulta el script por la API.
       - name: Detectar y etiquetar
+        if: steps.check.outputs.present == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
