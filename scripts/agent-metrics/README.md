@@ -150,18 +150,33 @@ gh variable set METRICS_PROJECT_NUMBER --repo DiegoRam/atgq-erp --body "<N>"
 # 3. Campos (nombres exactos, incluidos los sufijos "(h)")
 PROJECTS_TOKEN=<pat> node scripts/agent-metrics/ensure-project.mjs --project-number <N>
 
-# 4. Secret con el PAT
+# 4. Secret con el PAT clásico (scope `project`, ver más abajo)
 gh secret set PROJECTS_TOKEN --repo DiegoRam/atgq-erp
 ```
 
-**El PAT.** Fine-grained, recomendado: acceso solo a `atgq-erp`; permisos de
-repositorio Contents `Read`, Issues `RW`, Pull requests `RW`, Deployments
-`Read`, Commit statuses `Read`; y **Account permissions → Projects
-`Read and write`**. Este último es el paso que todo el mundo se saltea: los
-proyectos de un usuario viven en permisos de **cuenta**, no de repositorio.
+**El PAT: tiene que ser CLÁSICO, con un solo scope `project`.**
 
-Un PAT clásico con `repo` + `project` también sirve, pero `repo` da escritura
-sobre **todos** los repos de la cuenta, y el secret vive en un repo **público**.
+Un token fine-grained **no sirve** para este tablero, y conviene saber por qué
+antes de perder media hora en el formulario: los fine-grained no tienen permiso
+de Projects a nivel de cuenta. Sólo existe a nivel de **organización**
+([docs](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens)).
+Como este tablero es de usuario (`/users/<owner>/projects/N`), ningún
+fine-grained puede escribirlo. La lista de "Account permissions" del formulario
+no tiene la entrada `Projects`; la que sí aparece bajo _repository_ permissions
+es otra cosa (proyectos a nivel repo) y elegirla produce un token que se crea
+sin error y después saltea el sync en silencio.
+
+Entonces: https://github.com/settings/tokens/new → marcar **sólo `project`**.
+
+Nada más. En particular **no hace falta `repo`**: el `PROJECTS_TOKEN` se usa
+exclusivamente para operaciones de Projects v2, mientras que leer PRs, crear
+etiquetas y escribir el issue de seguimiento los hace el `GITHUB_TOKEN` del
+propio workflow. Con el repo público, leer los PRs no requiere scope alguno.
+Eso mantiene el radio de daño acotado a los tableros — importante, porque el
+secret vive en un repo **público**.
+
+(Si el repo pasara a privado, `addProjectV2ItemById` necesitaría además `repo`
+para resolver el PR como contenido.)
 
 **Para que la detección dispare de verdad**, hace falta además:
 
