@@ -23,7 +23,10 @@ export interface ItemVenta {
   id: string;
   nombre: string;
   descripcion: string | null;
+  /** Tarifa de socio */
   precio: number;
+  /** Tarifa de no socio: por defecto `precio` + 20%, editable a mano */
+  precio_no_socio: number;
   activo: boolean;
   stock_item_id: string | null;
   created_at: string;
@@ -35,6 +38,7 @@ export interface ItemVentaFormData {
   nombre: string;
   descripcion?: string | null;
   precio: number;
+  precio_no_socio: number;
   activo: boolean;
   stock_item_id?: string | null;
 }

@@ -14,7 +14,16 @@ export type ClienteSchemaType = z.infer<typeof clienteSchema>;
 export const itemVentaSchema = z.object({
   nombre: z.string().min(1, "Nombre requerido"),
   descripcion: z.string().nullable().optional(),
-  precio: z.number().positive("El precio debe ser mayor a 0"),
+  // `.nonnegative()` y no `.positive()`: hay 21 ítems del legacy con precio
+  // de socio 0 — "Derecho de línea Galería" ($0 socio / $28.000 no socio) es
+  // una tarifa real, no un dato faltante. Con `.positive()` el ABM no dejaba
+  // guardar esos ítems ni para corregirles el nombre.
+  precio: z
+    .number({ error: "Ingrese el precio para socios" })
+    .nonnegative("El precio no puede ser negativo"),
+  precio_no_socio: z
+    .number({ error: "Ingrese el precio para no socios" })
+    .nonnegative("El precio no puede ser negativo"),
   activo: z.boolean(),
   stock_item_id: z.string().uuid().nullable().optional(),
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -18,6 +18,14 @@ import {
 import type { ItemVenta } from "@/types/ventas";
 import type { StockItem } from "@/types/stock";
 
+/**
+ * Misma regla que el backfill de la migración
+ * 20260812000001_items_ventas_precio_no_socio.sql: socio + 20%, 2 decimales.
+ */
+function precioNoSocioSugerido(precio: number) {
+  return Number((precio * 1.2).toFixed(2));
+}
+
 interface ItemVentaFormProps {
   open: boolean;
   onOpenChange: () => void;
@@ -33,6 +41,11 @@ export function ItemVentaForm({
 }: ItemVentaFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  // Mientras esté en false, el precio de no socio sigue al de socio a +20%
+  const [precioNoSocioManual, setPrecioNoSocioManual] = useState(false);
+  // El modal no desmonta este componente al cerrarse (Radix sólo desmonta el
+  // DialogContent), así que el estado sobrevive de un ítem al siguiente.
+  const recienReseteadoRef = useRef(false);
   const isEditing = !!item;
 
   const {
@@ -54,23 +67,59 @@ export function ItemVentaForm({
 
   useEffect(() => {
     if (open && item) {
+      const p = Number(item.precio);
+      const pns = Number(item.precio_no_socio);
       reset({
         nombre: item.nombre,
         descripcion: item.descripcion,
-        precio: Number(item.precio),
+        precio: p,
+        precio_no_socio: pns,
         activo: item.activo,
         stock_item_id: item.stock_item_id,
       });
+      // Si el par guardado ya cumple la regla, el campo sigue enganchado. Si
+      // diverge (los ítems con tarifa propia del legacy) fue puesto a mano y
+      // no se toca: sería pisar justo el dato que vinimos a rescatar.
+      setPrecioNoSocioManual(precioNoSocioSugerido(p) !== pns);
+      recienReseteadoRef.current = true;
     } else if (open) {
       reset({
         nombre: "",
         descripcion: null,
         precio: 0,
+        precio_no_socio: 0,
         activo: true,
         stock_item_id: null,
       });
+      setPrecioNoSocioManual(false);
+      recienReseteadoRef.current = true;
     }
   }, [open, item, reset]);
+
+  const precio = watch("precio");
+
+  // Enganche en vivo del +20%. El guard de Number.isFinite es lo que evita
+  // escribir NaN mientras el input de socio está vacío (`valueAsNumber`):
+  // el campo se congela en su último valor en vez de vaciarse y fallar la
+  // validación en un campo que el usuario nunca tocó.
+  useEffect(() => {
+    // El efecto de reset corre justo antes que éste en el MISMO commit, pero
+    // acá `precio` y `precioNoSocioManual` son todavía los del render
+    // anterior: sin este guard, abrir un ítem después de otro le pisaba el
+    // precio_no_socio guardado con el sugerido del ítem previo — y como el
+    // flag manual ya quedaba en true, no se corregía nunca. Justo destruía
+    // las tarifas del legacy que esta feature vino a rescatar.
+    if (recienReseteadoRef.current) {
+      recienReseteadoRef.current = false;
+      return;
+    }
+    if (!open || precioNoSocioManual) return;
+    if (!Number.isFinite(precio)) return;
+    setValue("precio_no_socio", precioNoSocioSugerido(precio), {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+  }, [open, precio, precioNoSocioManual, setValue]);
 
   async function onSubmit(data: ItemVentaSchemaType) {
     setIsSubmitting(true);
@@ -79,6 +128,7 @@ export function ItemVentaForm({
         nombre: data.nombre,
         descripcion: data.descripcion || null,
         precio: data.precio,
+        precio_no_socio: data.precio_no_socio,
         activo: data.activo,
         stock_item_id: data.stock_item_id || null,
       };
@@ -130,7 +180,7 @@ export function ItemVentaForm({
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="precio">Precio (ARS)</Label>
+          <Label htmlFor="precio">Precio Socio (ARS)</Label>
           <Input
             id="precio"
             type="number"
@@ -140,6 +190,49 @@ export function ItemVentaForm({
           {errors.precio && (
             <p className="text-xs text-destructive">{errors.precio.message}</p>
           )}
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="precio_no_socio">Precio No Socio (ARS)</Label>
+          {/*
+            El enganche se corta con el primer tipeo real y no con el blur:
+            `touchedFields` sólo se prende al salir del campo, así que tipear
+            sin salir dejaría que la próxima tecla en "precio" pise lo
+            cargado. `setValue()` no dispara este onChange.
+          */}
+          <Input
+            id="precio_no_socio"
+            type="number"
+            step="0.01"
+            {...register("precio_no_socio", {
+              valueAsNumber: true,
+              onChange: () => setPrecioNoSocioManual(true),
+            })}
+          />
+          {errors.precio_no_socio && (
+            <p className="text-xs text-destructive">
+              {errors.precio_no_socio.message}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {precioNoSocioManual ? (
+              <>
+                Precio manual.{" "}
+                {/* type="button" explícito: el default de un <button> es
+                    "submit", y no depender de que FormModal hoy no monte un
+                    <form> alrededor */}
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => setPrecioNoSocioManual(false)}
+                >
+                  Volver a socio + 20%
+                </button>
+              </>
+            ) : (
+              "Se autocompleta como precio de socio + 20% hasta que lo edite."
+            )}
+          </p>
         </div>
 
         <div className="space-y-1">

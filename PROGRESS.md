@@ -139,6 +139,14 @@
 
 ---
 
+## FASE 11 — Tarifas Socio / No Socio
+
+| ID | Tarea | Estado | Fecha |
+|----|-------|--------|-------|
+| P11.1 | Precio dual en ítems de venta (`precio_no_socio`), cobrado según el toggle del POS + rescate de `ValorNoSocio` del legacy | ✅ | 2026-08-12 |
+
+---
+
 ## Bloqueadores activos
 
 _Ninguno por ahora._
