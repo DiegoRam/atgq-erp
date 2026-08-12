@@ -1,0 +1,80 @@
+-- ============================================================
+-- ATGQ ERP — Recargo por defecto para no socios
+--
+-- `20260812000001` recuperó `ValorNoSocio` del legacy tal cual, y en el
+-- legacy la segunda tarifa casi nunca se cargó distinta: quedaron 165 de
+-- 185 ítems activos con `precio_no_socio = precio`. En el POS eso se ve
+-- como un toggle Socio/No Socio que no hace nada — se elige *No Socio* y
+-- el importe del carrito no se mueve, porque las dos tarifas son el mismo
+-- número (`Blanco Fusil 1 Zona`: $1.500 y $1.500).
+--
+-- Acá se instala el default de negocio (socio + 20%) sobre esas filas.
+-- Es un valor de arranque, no una regla: el club edita cada tarifa desde
+-- Ventas → Ítems de Venta cuando la real difiere.
+--
+-- Mismo 1.2 que usa el resto del sistema: el fallback de la migración
+-- anterior (…000001, "2) Resto: socio + 20%") y el autocompletado del
+-- formulario (src/components/ventas/ItemVentaForm.tsx).
+--
+-- Los tres guards del WHERE, y por qué cada uno:
+--
+--   * `precio > 0` — en el legacy `ValorSocio = 0` marcaba "esto no se le
+--     vende a socios" (Derecho de línea, Idoneidad de tiro,
+--     ESTACIONAMIENTO, CHALET). Su `precio_no_socio` ya es el correcto y
+--     multiplicar cero no aporta nada. Que un socio pueda comprarlos en
+--     $0 se avisa en el POS; no se resuelve pisando precios.
+--
+--   * `activo` — los ~24 ítems "(DESUSO)"/"No Usar" que desactivó
+--     `20260808000001` no se venden, y esta migración toca una columna de
+--     plata: cuanto menos filas mueva, mejor. Mismo criterio que esa
+--     migración hermana. Si alguno se reactiva, el ABM le autocompleta el
+--     +20% al editarlo.
+--
+--   * `nombre !~* 'socio'` — el club modeló parte de la distinción como
+--     ÍTEMS SEPARADOS en vez de dos tarifas: `Permiso de Caza - No Socio`
+--     ($400) y `Permiso de Caza - Socio` ($330) son dos filas, cada una
+--     con sus dos tarifas iguales. Sin este guard el no socio pagaría
+--     $480 por un ítem que el tarifario cobra $400 — el recargo aplicado
+--     dos veces, una en el nombre y otra en la columna. La señal que los
+--     distingue es el nombre, no la desigualdad de precios, así que el
+--     guard tiene que mirar el nombre. Son 3 filas activas
+--     (las dos de Permiso de Caza y LLAVE SALA DE SOCIOS); quedan como
+--     están y las revisa una persona.
+--
+-- NO se tocan tampoco los 20 ítems cuya tarifa de no socio ya difiere:
+-- son precios reales del club (MEDICO CLINICO 37000/46000, QUINCHO
+-- 48000/192000, Helice 500/600, Cena 112 años 30000/35000).
+--
+-- Alcance en prod: 158 filas de 210. NO es re-runnable-safe: si el club
+-- fija a mano una tarifa de no socio igual a la de socio, una segunda
+-- corrida se la pisaría. Es one-shot por intención — el ledger de
+-- migraciones es lo que garantiza que corra una sola vez, no el WHERE.
+-- (Además, con `precio <= 0.02` el redondeo devuelve el mismo valor y la
+-- fila vuelve a matchear; inocuo, pero por eso no se puede hablar de
+-- idempotencia "por construcción".)
+--
+-- En una base sin datos legacy (local/demo) no matchea ninguna fila: los
+-- ítems del seed ya vienen con el 20% aplicado.
+--
+-- PARA REVERTIR — no hay marca de qué filas tocó esta migración, así que
+-- el inverso se re-deriva de la misma regla. Devuelve a "ambas tarifas
+-- iguales" todo lo que hoy esté exactamente en socio + 20%:
+--
+--   UPDATE items_ventas
+--      SET precio_no_socio = precio
+--    WHERE precio_no_socio = round(precio * 1.2, 2)
+--      AND precio > 0
+--      AND activo
+--      AND nombre !~* 'socio';
+--
+-- Salvedad: también alcanza a los ítems que el club haya dejado en
+-- socio + 20% a propósito desde el ABM (que autocompleta con esa misma
+-- regla), y a los que ya nacieron así por el fallback de …000001.
+-- ============================================================
+
+UPDATE items_ventas
+   SET precio_no_socio = round(precio * 1.2, 2)
+ WHERE precio_no_socio = precio
+   AND precio > 0
+   AND activo
+   AND nombre !~* 'socio';

@@ -34,7 +34,7 @@ import {
   getPuntosVentaActivos,
   crearVenta,
 } from "./actions";
-import type { ItemVenta, CartItem } from "@/types/ventas";
+import type { ItemVenta, CartItem, TipoPrecio } from "@/types/ventas";
 import type { Deposito } from "@/types/stock";
 
 type SocioOption = { id: string; nro_socio: number; apellido: string; nombre: string };
@@ -42,6 +42,24 @@ type MetodoPago = { id: string; nombre: string };
 
 /** El cajero trabaja en un mismo sector todo el turno: se recuerda su elección */
 const PDV_STORAGE_KEY = "atgq-erp-pdv";
+
+/**
+ * Tarifa del ítem según el comprador; espeja el `CASE` de `registrar_venta`
+ * — si divergen, el cajero cotiza un total y la base cobra otro.
+ *
+ * Devuelve `null` si el dato falta en vez de un número: `Number(null)` es 0 y
+ * `Number(undefined)` es `NaN`, y ninguno de los dos puede terminar siendo un
+ * precio de venta.
+ */
+function tarifaDe(
+  item: Pick<ItemVenta, "precio" | "precio_no_socio">,
+  tipo: TipoPrecio,
+): number | null {
+  const valor = tipo === "socio" ? item.precio : item.precio_no_socio;
+  if (valor == null) return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
+}
 
 export default function NuevaVentaPage() {
   const [items, setItems] = useState<ItemVenta[]>([]);
@@ -56,7 +74,7 @@ export default function NuevaVentaPage() {
   const [cantidad, setCantidad] = useState(1);
 
   // Client selection
-  const [tipoCliente, setTipoCliente] = useState<"socio" | "no_socio">("socio");
+  const [tipoCliente, setTipoCliente] = useState<TipoPrecio>("socio");
   const [socioSearch, setSocioSearch] = useState("");
   const [selectedSocioId, setSelectedSocioId] = useState("");
   const [metodoPagoId, setMetodoPagoId] = useState("");
@@ -121,13 +139,10 @@ export default function NuevaVentaPage() {
     return () => clearTimeout(timeout);
   }, [socioSearch, tipoCliente, selectedSocioId, searchSocios]);
 
-  /**
-   * Tarifa vigente según el toggle. Espeja el CASE de `registrar_venta`: si
-   * divergen, el cajero cotiza un total y la base cobra otro.
-   */
+  /** Tarifa del ítem según el toggle vigente. */
   const precioVigente = useCallback(
     (item: Pick<ItemVenta, "precio" | "precio_no_socio">) =>
-      Number(tipoCliente === "socio" ? item.precio : item.precio_no_socio),
+      tarifaDe(item, tipoCliente),
     [tipoCliente],
   );
 
@@ -145,6 +160,14 @@ export default function NuevaVentaPage() {
       setCart(updated);
     } else {
       const precio = precioVigente(item);
+      if (precio === null) {
+        toast.error(
+          `"${item.nombre}" no tiene cargada la tarifa de ${
+            tipoCliente === "socio" ? "socio" : "no socio"
+          }`,
+        );
+        return;
+      }
       setCart([
         ...cart,
         {
@@ -165,7 +188,7 @@ export default function NuevaVentaPage() {
    * Cambiar de comprador reprecia lo que ya está en el carrito: si no, el
    * total en pantalla no sería el que va a cobrar `registrar_venta`.
    */
-  function cambiarTipoCliente(nuevo: "socio" | "no_socio") {
+  function cambiarTipoCliente(nuevo: TipoPrecio) {
     if (nuevo === tipoCliente) return; // sin toast al re-clickear el activo
     setTipoCliente(nuevo);
     if (nuevo === "socio") {
@@ -183,10 +206,8 @@ export default function NuevaVentaPage() {
     const recalculado = cart.map((c) => {
       const item = items.find((i) => i.id === c.item_id);
       if (!item) return c;
-      const precio = Number(
-        nuevo === "socio" ? item.precio : item.precio_no_socio,
-      );
-      if (!Number.isFinite(precio) || precio === c.precio_unitario) return c;
+      const precio = tarifaDe(item, nuevo);
+      if (precio === null || precio === c.precio_unitario) return c;
       cambio = true;
       return { ...c, precio_unitario: precio, subtotal: precio * c.cantidad };
     });
@@ -329,6 +350,9 @@ export default function NuevaVentaPage() {
                 searchPlaceholder="Buscar ítem por nombre o descripción..."
                 emptyText="Sin ítems que coincidan"
               />
+              <p className="text-xs text-muted-foreground">
+                Precios de la lista: Socio / No Socio (uno solo si coinciden)
+              </p>
             </div>
             <div className="w-24 space-y-1">
               <Label className="text-xs">Cantidad</Label>
@@ -349,7 +373,11 @@ export default function NuevaVentaPage() {
             </Button>
           </div>
 
-          <CarritoVenta items={cart} onRemove={handleRemoveItem} />
+          <CarritoVenta
+            items={cart}
+            onRemove={handleRemoveItem}
+            tipoPrecio={tipoCliente}
+          />
         </div>
 
         {/* Right: Client + Payment */}
