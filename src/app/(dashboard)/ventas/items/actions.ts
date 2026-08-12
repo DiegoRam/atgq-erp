@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
+import { RECARGO_NO_SOCIO_FALLBACK } from "@/lib/precios";
 import { revalidatePath } from "next/cache";
 import type { ItemVenta, ItemVentaFormData } from "@/types/ventas";
 import type { StockItem } from "@/types/stock";
@@ -29,6 +30,36 @@ export async function getStockItemsForSelect(): Promise<StockItem[]> {
       .order("id")
       .range(from, to),
   );
+}
+
+/**
+ * Recargo configurado para no socios, en porcentaje. Lo consume el
+ * autocompletado de `ItemVentaForm`.
+ *
+ * **Nunca tira ni devuelve null**: ante cualquier fallo (RLS, red, fila
+ * ausente) devuelve `RECARGO_NO_SOCIO_FALLBACK`, que es el mismo `DEFAULT 20`
+ * de la columna. Una configuración inaccesible degrada exactamente al
+ * comportamiento previo a esta feature en vez de romper el ABM de ítems.
+ */
+export async function getRecargoNoSocioPct(): Promise<number> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("configuracion")
+      .select("recargo_no_socio_pct")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("getRecargoNoSocioPct", error);
+      return RECARGO_NO_SOCIO_FALLBACK;
+    }
+    const pct = Number(data?.recargo_no_socio_pct);
+    return Number.isFinite(pct) ? pct : RECARGO_NO_SOCIO_FALLBACK;
+  } catch (err) {
+    console.error("getRecargoNoSocioPct", err);
+    return RECARGO_NO_SOCIO_FALLBACK;
+  }
 }
 
 export async function createItemVenta(formData: ItemVentaFormData) {

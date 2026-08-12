@@ -15,22 +15,25 @@ import {
   updateItemVenta,
   getStockItemsForSelect,
 } from "@/app/(dashboard)/ventas/items/actions";
+import {
+  precioNoSocioSugerido,
+  RECARGO_NO_SOCIO_FALLBACK,
+} from "@/lib/precios";
+import { formatPorcentaje } from "@/lib/format";
 import type { ItemVenta } from "@/types/ventas";
 import type { StockItem } from "@/types/stock";
-
-/**
- * Misma regla que el backfill de la migración
- * 20260812000001_items_ventas_precio_no_socio.sql: socio + 20%, 2 decimales.
- */
-function precioNoSocioSugerido(precio: number) {
-  return Number((precio * 1.2).toFixed(2));
-}
 
 interface ItemVentaFormProps {
   open: boolean;
   onOpenChange: () => void;
   item: ItemVenta | null;
   onSaved: () => void;
+  /**
+   * Recargo para no socios, en %, leído de `configuracion`. `null` mientras
+   * carga: en ese caso se usa el fallback, que es el mismo default de la
+   * columna.
+   */
+  recargoPct: number | null;
 }
 
 export function ItemVentaForm({
@@ -38,15 +41,31 @@ export function ItemVentaForm({
   onOpenChange,
   item,
   onSaved,
+  recargoPct,
 }: ItemVentaFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
-  // Mientras esté en false, el precio de no socio sigue al de socio a +20%
+  // Mientras esté en false, el precio de no socio sigue al de socio a +pct%
   const [precioNoSocioManual, setPrecioNoSocioManual] = useState(false);
   // El modal no desmonta este componente al cerrarse (Radix sólo desmonta el
   // DialogContent), así que el estado sobrevive de un ítem al siguiente.
   const recienReseteadoRef = useRef(false);
+  // El prop llega asíncrono. Se espeja en un ref para poder leerlo al abrir el
+  // modal sin meterlo como dependencia del efecto de reset: una llegada tardía
+  // volvería a correr reset() y borraría lo que el usuario ya tipeó.
+  const recargoPctRef = useRef(recargoPct);
+  // El pct con el que se abrió este modal. Congelado a propósito — ver el
+  // efecto de reset.
+  const pctRef = useRef(RECARGO_NO_SOCIO_FALLBACK);
+  // true si lo congelado es el fallback y no el valor real de la config.
+  const pctProvisorioRef = useRef(false);
+  // Copia en estado sólo para el texto de ayuda, que sí tiene que re-renderear.
+  const [pctVisible, setPctVisible] = useState(RECARGO_NO_SOCIO_FALLBACK);
   const isEditing = !!item;
+
+  useEffect(() => {
+    recargoPctRef.current = recargoPct;
+  }, [recargoPct]);
 
   const {
     register,
@@ -54,7 +73,8 @@ export function ItemVentaForm({
     reset,
     setValue,
     watch,
-    formState: { errors },
+    getValues,
+    formState: { errors, isDirty },
   } = useForm<ItemVentaSchemaType>({
     resolver: zodResolver(itemVentaSchema),
   });
@@ -66,6 +86,18 @@ export function ItemVentaForm({
   }, [open]);
 
   useEffect(() => {
+    // El pct se CONGELA acá, al abrir. Si el efecto de enganche lo leyera
+    // reactivo, un cambio de configuración —o simplemente la llegada tardía
+    // del prop— volvería a disparar setValue() y le pisaría el
+    // precio_no_socio guardado al ítem en edición: el mismo bug que
+    // recienReseteadoRef ya evita para el cambio de ítem.
+    const pct = recargoPctRef.current ?? RECARGO_NO_SOCIO_FALLBACK;
+    pctRef.current = pct;
+    setPctVisible(pct);
+    // Si se congeló el fallback porque el prop todavía no había llegado, el
+    // efecto de abajo re-congela cuando llegue. Ver ahí por qué.
+    pctProvisorioRef.current = recargoPctRef.current === null;
+
     if (open && item) {
       const p = Number(item.precio);
       const pns = Number(item.precio_no_socio);
@@ -80,7 +112,7 @@ export function ItemVentaForm({
       // Si el par guardado ya cumple la regla, el campo sigue enganchado. Si
       // diverge (los ítems con tarifa propia del legacy) fue puesto a mano y
       // no se toca: sería pisar justo el dato que vinimos a rescatar.
-      setPrecioNoSocioManual(precioNoSocioSugerido(p) !== pns);
+      setPrecioNoSocioManual(precioNoSocioSugerido(p, pct) !== pns);
       recienReseteadoRef.current = true;
     } else if (open) {
       reset({
@@ -96,9 +128,44 @@ export function ItemVentaForm({
     }
   }, [open, item, reset]);
 
+  // Re-congelado por única vez, para el caso en que el modal se abrió antes de
+  // que `getRecargoNoSocioPct()` respondiera: ahí se congeló el fallback de 20
+  // y el texto de ayuda afirmaba "socio + 20%" aunque el club tuviera otro
+  // valor configurado — un precio equivocado con una etiqueta convencida.
+  //
+  // Sólo se re-congela mientras el form sigue **pristino** (`!isDirty`): si el
+  // usuario ya tipeó algo, se respeta lo que tiene en pantalla y el pct
+  // congelado, que es lo que evita reintroducir el bug de pisarle el valor
+  // cargado. `setValue(..., shouldDirty: false)` del autocompletado no ensucia
+  // el form, así que el autofill previo no bloquea esta corrección.
+  useEffect(() => {
+    if (!open || recargoPct === null || !pctProvisorioRef.current) return;
+    if (isDirty) return;
+
+    pctProvisorioRef.current = false;
+    pctRef.current = recargoPct;
+    setPctVisible(recargoPct);
+
+    const p = Number(getValues("precio"));
+    if (!Number.isFinite(p)) return;
+
+    if (item) {
+      // Re-deriva si la tarifa guardada era manual: se había evaluado contra
+      // el pct equivocado.
+      setPrecioNoSocioManual(
+        precioNoSocioSugerido(p, recargoPct) !== Number(item.precio_no_socio),
+      );
+    } else {
+      setValue("precio_no_socio", precioNoSocioSugerido(p, recargoPct), {
+        shouldValidate: false,
+        shouldDirty: false,
+      });
+    }
+  }, [open, recargoPct, isDirty, item, getValues, setValue]);
+
   const precio = watch("precio");
 
-  // Enganche en vivo del +20%. El guard de Number.isFinite es lo que evita
+  // Enganche en vivo del recargo. El guard de Number.isFinite es lo que evita
   // escribir NaN mientras el input de socio está vacío (`valueAsNumber`):
   // el campo se congela en su último valor en vez de vaciarse y fallar la
   // validación en un campo que el usuario nunca tocó.
@@ -115,7 +182,9 @@ export function ItemVentaForm({
     }
     if (!open || precioNoSocioManual) return;
     if (!Number.isFinite(precio)) return;
-    setValue("precio_no_socio", precioNoSocioSugerido(precio), {
+    // pctRef y no el prop: las dependencias de este efecto quedan iguales a
+    // antes justamente para que el recargo no pueda re-dispararlo.
+    setValue("precio_no_socio", precioNoSocioSugerido(precio, pctRef.current), {
       shouldValidate: false,
       shouldDirty: false,
     });
@@ -226,11 +295,16 @@ export function ItemVentaForm({
                   className="underline"
                   onClick={() => setPrecioNoSocioManual(false)}
                 >
-                  Volver a socio + 20%
+                  {/* Con recargo 0 no hay "+0%" que mostrar: se lee mal */}
+                  {pctVisible === 0
+                    ? "Volver al precio de socio"
+                    : `Volver a socio + ${formatPorcentaje(pctVisible)}%`}
                 </button>
               </>
+            ) : pctVisible === 0 ? (
+              "Se autocompleta con el mismo precio del socio hasta que lo edite."
             ) : (
-              "Se autocompleta como precio de socio + 20% hasta que lo edite."
+              `Se autocompleta como precio de socio + ${formatPorcentaje(pctVisible)}% hasta que lo edite.`
             )}
           </p>
         </div>

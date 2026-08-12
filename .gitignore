@@ -55,3 +55,6 @@ pnpm-workspace.yaml
 
 # Reportes de agent-metrics (se suben como artefacto de Actions, no se versionan)
 .metrics/
+
+# Snapshots y logs del MCP de Playwright (artefactos de verificación, no fuente)
+.playwright-mcp/

@@ -134,6 +134,8 @@ export const NAV_MODULES: NavModule[] = [
     items: [
       { label: "Usuarios", href: "/security/usuarios" },
       { label: "Roles y Permisos", href: "/security/roles" },
+      sep,
+      { label: "Parámetros del Sistema", href: "/security/configuracion" },
     ],
   },
 ];
