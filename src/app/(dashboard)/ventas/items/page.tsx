@@ -19,7 +19,11 @@ import {
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
-import { getItemsVentas, deleteItemVenta } from "./actions";
+import {
+  getItemsVentas,
+  deleteItemVenta,
+  getRecargoNoSocioPct,
+} from "./actions";
 import { ItemVentaForm } from "@/components/ventas/ItemVentaForm";
 import type { ItemVenta } from "@/types/ventas";
 
@@ -101,12 +105,18 @@ export default function ItemsVentasPage() {
   const [editingItem, setEditingItem] = useState<ItemVenta | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ItemVenta | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // null mientras carga; el form usa su fallback hasta que llegue.
+  const [recargoPct, setRecargoPct] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const result = await getItemsVentas();
+      const [result, pct] = await Promise.all([
+        getItemsVentas(),
+        getRecargoNoSocioPct(),
+      ]);
       setData(result);
+      setRecargoPct(pct);
     } finally {
       setIsLoading(false);
     }
@@ -187,11 +197,17 @@ export default function ItemsVentasPage() {
         meta={{ onEdit: handleEdit, onDelete: setDeleteTarget }}
       />
 
+      {/*
+        No se condiciona el render a que `recargoPct` haya cargado: bloquear la
+        apertura del modal durante la carga inicial es peor falla que abrirlo
+        con el fallback.
+      */}
       <ItemVentaForm
         open={modalOpen}
         onOpenChange={handleModalClose}
         item={editingItem}
         onSaved={handleSaved}
+        recargoPct={recargoPct}
       />
 
       <AlertDialog

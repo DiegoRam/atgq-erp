@@ -145,6 +145,7 @@
 |----|-------|--------|-------|
 | P11.1 | Precio dual en ítems de venta (`precio_no_socio`), cobrado según el toggle del POS + rescate de `ValorNoSocio` del legacy | ✅ | 2026-08-12 |
 | P11.2 | Recargo por defecto del 20% donde el legacy dejó ambas tarifas iguales + tarifa vigente visible en el carrito y el buscador del POS | ✅ | 2026-08-12 |
+| P11.3 | Recargo para no socios como parámetro del sistema (`configuracion`) + reconstrucción masiva de precios con previsualización | ✅ | 2026-08-12 |
 
 ---
 

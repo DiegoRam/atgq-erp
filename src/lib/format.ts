@@ -61,6 +61,18 @@ export function formatCurrency(amount: number | null | undefined): string {
   }).format(amount);
 }
 
+/**
+ * Porcentaje sin ceros de relleno y con coma decimal: `20` → "20",
+ * `20.5` → "20,5". Para intercalar en texto ("socio + 20,5%"), donde un
+ * "20,00%" se lee peor.
+ */
+export function formatPorcentaje(pct: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(pct);
+}
+
 export function exportToCSV(
   data: Record<string, unknown>[],
   filename: string,
