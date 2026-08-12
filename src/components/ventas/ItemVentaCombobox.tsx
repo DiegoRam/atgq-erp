@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { Combobox, type ComboboxOption } from "@/components/shared/Combobox";
 import { formatCurrency } from "@/lib/format";
-import type { ItemVenta } from "@/types/ventas";
+import type { ItemVenta, TipoPrecio } from "@/types/ventas";
 
 /** Lo mínimo para identificar el ítem; el resto sólo enriquece búsqueda y fila. */
 type ItemVentaOption = Pick<ItemVenta, "id" | "nombre"> &
@@ -19,10 +19,13 @@ interface ItemVentaComboboxProps {
   items: ItemVentaOption[];
   value: string | null;
   onChange: (value: string | null) => void;
-  /** Muestra el precio alineado a la derecha de cada fila (POS). */
+  /**
+   * Muestra los precios alineados a la derecha de cada fila (POS): socio y
+   * no socio, en ese orden, o uno solo si coinciden.
+   */
   showPrecio?: boolean;
-  /** Qué tarifa mostrar cuando `showPrecio`. Por defecto, la de socio. */
-  tipoPrecio?: "socio" | "no_socio";
+  /** Cuál de las dos tarifas está vigente (se resalta). Por defecto, socio. */
+  tipoPrecio?: TipoPrecio;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyText?: string;
@@ -50,7 +53,17 @@ export function ItemVentaCombobox({
   const options: ComboboxOption[] = React.useMemo(
     () =>
       items.map((i) => {
-        const precio = tipoPrecio === "no_socio" ? i.precio_no_socio : i.precio;
+        // Se muestran las dos tarifas — con el catálogo legacy la mayoría
+        // coincide, y viendo una sola el cajero no sabe si el toggle aplicó.
+        const socio = i.precio != null ? Number(i.precio) : null;
+        const noSocio =
+          i.precio_no_socio != null ? Number(i.precio_no_socio) : null;
+        const hayDos = socio != null && noSocio != null && socio !== noSocio;
+        const precio = tipoPrecio === "no_socio" ? noSocio : socio;
+        const activa = (cual: TipoPrecio) =>
+          cual === tipoPrecio
+            ? "font-medium text-foreground"
+            : "text-muted-foreground";
         return {
           value: i.id,
           label: i.nombre,
@@ -65,11 +78,24 @@ export function ItemVentaCombobox({
                   (inactivo)
                 </span>
               )}
-              {showPrecio && precio != null && (
-                <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">
-                  {formatCurrency(Number(precio))}
-                </span>
-              )}
+              {showPrecio &&
+                (hayDos ? (
+                  <span className="ml-auto shrink-0 tabular-nums">
+                    <span className={activa("socio")}>
+                      {formatCurrency(socio)}
+                    </span>
+                    <span className="text-muted-foreground"> / </span>
+                    <span className={activa("no_socio")}>
+                      {formatCurrency(noSocio)}
+                    </span>
+                  </span>
+                ) : (
+                  precio != null && (
+                    <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">
+                      {formatCurrency(precio)}
+                    </span>
+                  )
+                ))}
             </span>
           ),
         };

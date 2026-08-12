@@ -19,6 +19,9 @@ export interface ClienteFormData {
   telefono?: string | null;
 }
 
+/** Cuál de las dos tarifas de `items_ventas` rige la operación */
+export type TipoPrecio = "socio" | "no_socio";
+
 export interface ItemVenta {
   id: string;
   nombre: string;
