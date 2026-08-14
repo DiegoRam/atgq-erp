@@ -1,35 +1,67 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { revalidatePath } from "next/cache";
 import type { GrupoFamiliar } from "@/types/socios";
 
 export async function getGruposFamiliares(): Promise<GrupoFamiliar[]> {
   const supabase = await createClient();
 
-  const { data: grupos, error } = await supabase
-    .from("grupos_familiares")
-    .select("*, titular:socios!fk_grupos_familiares_titular(id,nro_socio,apellido,nombre)")
-    .order("created_at", { ascending: false });
+  // fetchAllRows y no un .select() pelado: PostgREST corta en 1000 filas en
+  // silencio. Importa además del listado en sí porque esta pantalla es la vía
+  // para detectar los grupos sin titular, a los que la app móvil les niega las
+  // cuotas del grupo — un conteo truncado escondería justo los que hay que arreglar.
+  const grupos = await fetchAllRows<GrupoFamiliar>((desde, hasta) =>
+    supabase
+      .from("grupos_familiares")
+      .select(
+        "*, titular:socios!fk_grupos_familiares_titular(id,nro_socio,apellido,nombre)",
+      )
+      // Desempate por id: `created_at` no es único y sin él la paginación de
+      // fetchAllRows puede repetir o saltear filas entre páginas.
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(desde, hasta),
+  );
 
-  if (error) throw new Error(error.message);
+  if (grupos.length === 0) return [];
 
-  // For each grupo, fetch members
-  const result: GrupoFamiliar[] = [];
-  for (const g of grupos ?? []) {
-    const { data: miembros } = await supabase
+  // Una sola consulta para todos los miembros en vez de una por grupo: el bucle
+  // anterior hacía N+1 round-trips y con unos cientos de grupos la pantalla
+  // tardaba o directamente se cortaba.
+  const miembros = await fetchAllRows<{
+    id: string;
+    nro_socio: number;
+    apellido: string;
+    nombre: string;
+    grupo_familiar_id: string;
+  }>((desde, hasta) =>
+    supabase
       .from("socios")
-      .select("id,nro_socio,apellido,nombre")
-      .eq("grupo_familiar_id", g.id)
-      .order("apellido");
+      .select("id,nro_socio,apellido,nombre,grupo_familiar_id")
+      .in(
+        "grupo_familiar_id",
+        grupos.map((g) => g.id),
+      )
+      .order("apellido")
+      .order("id")
+      .range(desde, hasta),
+  );
 
-    result.push({
-      ...g,
-      miembros: miembros ?? [],
+  const porGrupo = new Map<string, GrupoFamiliar["miembros"]>();
+  for (const m of miembros) {
+    const lista = porGrupo.get(m.grupo_familiar_id) ?? [];
+    lista.push({
+      id: m.id,
+      nro_socio: m.nro_socio,
+      apellido: m.apellido,
+      nombre: m.nombre,
     });
+    porGrupo.set(m.grupo_familiar_id, lista);
   }
 
-  return result;
+  return grupos.map((g) => ({ ...g, miembros: porGrupo.get(g.id) ?? [] }));
 }
 
 export async function createGrupoFamiliar(titularId: string, miembroIds: string[]) {

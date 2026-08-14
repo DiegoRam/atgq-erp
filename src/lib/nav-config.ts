@@ -23,6 +23,7 @@ export const NAV_MODULES: NavModule[] = [
       { label: "Socios Morosos", href: "/socios/morosos" },
       { label: "Cuotas", href: "/socios/cuotas" },
       { label: "Padrón", href: "/socios/padron" },
+      { label: "App Móvil — Códigos", href: "/socios/app-movil" },
       sep,
       { label: "Socios por Categorías", href: "/socios/reportes/categorias" },
       { label: "Socios por Edades", href: "/socios/reportes/edades" },

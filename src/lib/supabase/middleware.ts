@@ -2,6 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  // Los route handlers de /api se autentican con `Authorization: Bearer`, no
+  // con cookies, y tienen que contestar 401 JSON. El redirect 307 a /login de
+  // más abajo le devolvería HTML de la pantalla de login a un cliente que
+  // espera JSON, que es indistinguible de un bug del endpoint.
+  //
+  // Esto está duplicado con la exclusión de `api/` en el matcher de
+  // src/middleware.ts a propósito: el matcher es la optimización (evita un
+  // round-trip a GoTrue por request), este guard es la corrección, y sobrevive
+  // a que alguien edite el matcher sin acordarse de por qué estaba así.
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
