@@ -68,7 +68,13 @@ export default function EmisionMasivaPage() {
     setEmitiendo(true);
     try {
       const res = await emitirCodigosMasivo(candidatos.map((c) => c.socio_id));
-      setEmitidos(res);
+      // ACUMULA, no reemplaza. Con más de MAX_LOTE candidatos el banner le pide
+      // al operador que repita la operación, y `previsualizar()` rehabilita el
+      // botón con la tanda siguiente: si esto reemplazara, el segundo click
+      // borraría los códigos del primero — que ya están vivos en la base y de
+      // los que sólo se guarda el hash. La lista es "todo lo que emitiste y
+      // todavía no descargaste", y el Excel se baja una sola vez al final.
+      setEmitidos((prev) => [...prev, ...res]);
       if (res.length === 0) {
         toast.info("No se emitió ningún código: los socios del lote ya tienen cuenta.");
       } else {
@@ -115,15 +121,12 @@ export default function EmisionMasivaPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Select
-              value={categoriaId}
-              onValueChange={(v) => {
-                // Cambiar de lote sí descarta los códigos mostrados: pasan a
-                // ser de otra tanda y dejarlos en pantalla confundiría.
-                setEmitidos([]);
-                setCategoriaId(v);
-              }}
-            >
+            {/* Cambiar de categoría NO descarta los códigos ya emitidos: son
+                códigos reales que nadie descargó todavía, y hacer que un click
+                en un <Select> los destruya en silencio es la misma pérdida de
+                datos por otra puerta. Se acumulan y se descartan sólo con el
+                botón explícito de abajo. */}
+            <Select value={categoriaId} onValueChange={setCategoriaId}>
               <SelectTrigger className="w-[280px]">
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>
@@ -197,6 +200,22 @@ export default function EmisionMasivaPage() {
             >
               Descargar Excel ({emitidos.length})
             </Button>
+            {emitidos.length > 0 ? (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (
+                    confirm(
+                      `Se van a descartar ${emitidos.length} código(s) de la pantalla. Los códigos siguen activos para los socios, pero no vas a poder volver a verlos ni descargarlos: habría que reemitirlos. ¿Continuar?`,
+                    )
+                  ) {
+                    setEmitidos([]);
+                  }
+                }}
+              >
+                Limpiar lista
+              </Button>
+            ) : null}
           </div>
 
           {emitidos.length > 0 ? (
@@ -205,8 +224,9 @@ export default function EmisionMasivaPage() {
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
                   Descargue el Excel ahora: los códigos no se guardan y no se
-                  pueden volver a ver. Si sale de esta pantalla habrá que
-                  reemitirlos.
+                  pueden volver a ver. Si sale de esta pantalla o recarga habrá
+                  que reemitirlos. La lista acumula todas las tandas emitidas
+                  hasta que descargue o la limpie.
                 </p>
               </div>
               <div className="max-h-80 overflow-auto rounded-md border">

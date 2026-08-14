@@ -57,18 +57,33 @@ export async function getUsuarios(): Promise<UsuarioSistema[]> {
   // silencio, y acá eso reintroduce exactamente el problema que la paginación
   // de arriba acaba de resolver — a partir de la cuenta de socio número 1.001
   // el filtro dejaría de reconocerlas y volverían a aparecer en el listado.
-  const cuentasSocios = await fetchAllRows<{ user_id: string }>((desde, hasta) =>
+  const cuentasSocios = await fetchAllRows<{
+    user_id: string;
+    revocado_at: string | null;
+  }>((desde, hasta) =>
     admin
       .from("socios_usuarios")
-      .select("user_id")
-      // Sólo los vínculos vivos: una cuenta ya desvinculada dejó de ser de la
-      // app móvil, y ocultarla acá la volvería invisible e inadministrable
-      // (no habría forma de borrarla desde ninguna pantalla).
-      .is("revocado_at", null)
+      .select("user_id, revocado_at")
       .order("user_id")
       .range(desde, hasta),
   );
-  const esDeSocio = new Set(cuentasSocios.map((c) => c.user_id));
+
+  // Las cuentas con vínculo VIVO se ocultan: no son usuarios del ERP y no
+  // pueden tener rol (lo impide trg_usuarios_roles_excluye_socios).
+  const esDeSocio = new Set(
+    cuentasSocios.filter((c) => c.revocado_at === null).map((c) => c.user_id),
+  );
+
+  // Las desvinculadas sí se muestran —ocultarlas las dejaba invisibles e
+  // imposibles de borrar— pero marcadas. El trigger permite darles un rol del
+  // ERP, y su email lo eligió el socio al activar la app, sin verificación y
+  // fuera del control del club: el admin tiene que poder distinguirlas de una
+  // cuenta de staff antes de asignarle nada.
+  const exSocio = new Set(
+    cuentasSocios
+      .filter((c) => c.revocado_at !== null && !esDeSocio.has(c.user_id))
+      .map((c) => c.user_id),
+  );
 
   // Get all user-role assignments
   const { data: userRoles } = await admin
@@ -104,6 +119,7 @@ export async function getUsuarios(): Promise<UsuarioSistema[]> {
         : null,
       rol_id: roleInfo?.rol_id ?? null,
       rol_nombre: roleInfo?.rol_nombre ?? null,
+      ex_cuenta_socio: exSocio.has(u.id),
     };
   });
 }

@@ -188,6 +188,12 @@ BEGIN
   -- PostgREST directo, esquivando todas las funciones mobile_*. Es la
   -- invariante que esta migración declara como su mitigación más importante,
   -- así que no puede depender de que nadie escriba las dos tablas a la vez.
+  --
+  -- Hoy no puede haber deadlock: todos los caminos (mobile_canjear_invitacion,
+  -- updateUsuarioRole) escriben un solo user_id por transacción. Si alguna vez
+  -- se agrega una operación en LOTE sobre estas tablas —asignación masiva de
+  -- roles, vinculación en tanda— hay que ordenarla por user_id, o dos lotes
+  -- tomando los locks en orden inverso se traban entre sí.
   PERFORM pg_advisory_xact_lock(hashtextextended(NEW.user_id::text, 0));
 
   -- Sólo aplica a vínculos vivos: revocar (poner revocado_at) siempre se permite.
@@ -1110,9 +1116,18 @@ BEGIN
   -- borraba una fila en el canje exitoso, que es el caso raro). Una fila cuya
   -- ventana venció hace más de un día y que no está bloqueada ya no aporta
   -- nada. Va acá y no en un cron porque el proyecto no tiene pg_cron activo.
-  DELETE FROM canje_rate_limit
-   WHERE ventana_inicio < now() - interval '1 day'
-     AND (bloqueado_hasta IS NULL OR bloqueado_hasta <= now());
+  --
+  -- El random() la saca del camino caliente. Sin él corre en CADA request,
+  -- incluidos los de una ráfaga de fuerza bruta: como no hay índice por
+  -- ventana_inicio, cada uno hace un seq scan y todos toman row locks sobre las
+  -- mismas filas basura, serializándose entre sí — contención autoinfligida
+  -- justo en el momento en que menos conviene. A 1 de cada 100 intentos alcanza
+  -- de sobra para que la tabla no crezca.
+  IF random() < 0.01 THEN
+    DELETE FROM canje_rate_limit
+     WHERE ventana_inicio < now() - interval '1 day'
+       AND (bloqueado_hasta IS NULL OR bloqueado_hasta <= now());
+  END IF;
 
   INSERT INTO canje_rate_limit (ip_hash, ventana_inicio, intentos)
   VALUES (p_ip_hash, now(), 1)

@@ -21,7 +21,17 @@ const columns: ColumnDef<UsuarioSistema>[] = [
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <span className="font-medium">{row.original.email}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-medium">{row.original.email}</span>
+        {/* El email de una ex-cuenta de socio lo eligió el socio al activar la
+            app móvil, sin verificación: no es una cuenta creada por el club.
+            Se marca para que no se le asigne un rol del ERP por confusión. */}
+        {row.original.ex_cuenta_socio ? (
+          <Badge variant="outline" className="font-normal">
+            Ex-cuenta de socio
+          </Badge>
+        ) : null}
+      </div>
     ),
   },
   {
