@@ -12,6 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Loader2, TriangleAlert } from "lucide-react";
 import { exportToExcel } from "@/lib/export";
 import { formatDate } from "@/lib/format";
@@ -31,6 +41,7 @@ export default function EmisionMasivaPage() {
   const [emitidos, setEmitidos] = useState<CodigoEmitido[]>([]);
   const [cargando, setCargando] = useState(false);
   const [emitiendo, setEmitiendo] = useState(false);
+  const [confirmarLimpiar, setConfirmarLimpiar] = useState(false);
 
   useEffect(() => {
     getCategoriasSociales()
@@ -201,18 +212,7 @@ export default function EmisionMasivaPage() {
               Descargar Excel ({emitidos.length})
             </Button>
             {emitidos.length > 0 ? (
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  if (
-                    confirm(
-                      `Se van a descartar ${emitidos.length} código(s) de la pantalla. Los códigos siguen activos para los socios, pero no vas a poder volver a verlos ni descargarlos: habría que reemitirlos. ¿Continuar?`,
-                    )
-                  ) {
-                    setEmitidos([]);
-                  }
-                }}
-              >
+              <Button variant="ghost" onClick={() => setConfirmarLimpiar(true)}>
                 Limpiar lista
               </Button>
             ) : null}
@@ -257,6 +257,28 @@ export default function EmisionMasivaPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmarLimpiar} onOpenChange={setConfirmarLimpiar}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Descartar {emitidos.length} código(s) de la pantalla?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Los códigos siguen activos para los socios, pero no vas a poder
+              volver a verlos ni descargarlos: para entregarlos habría que
+              reemitirlos, lo que invalida estos. Si todavía no bajaste el
+              Excel, hacelo antes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setEmitidos([])}>
+              Descartar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
