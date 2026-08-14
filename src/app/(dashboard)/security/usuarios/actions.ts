@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import type { UsuarioSistema } from "@/types/security";
+import type { User } from "@supabase/supabase-js";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -30,11 +31,31 @@ export async function getUsuarios(): Promise<UsuarioSistema[]> {
   await requireAdmin();
   const admin = createAdminClient();
 
-  const {
-    data: { users },
-    error: usersError,
-  } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  if (usersError) throw new Error(usersError.message);
+  // Se pagina hasta agotar en vez de pedir una sola página de 1000: desde la
+  // app móvil, cada socio que activa su cuenta crea un usuario en Auth (hasta
+  // ~8.400). Con una sola página, el staff —que son un puñado y se crearon
+  // primero— se caía del listado por completo.
+  const PER_PAGE = 1000;
+  const users: User[] = [];
+  for (let pagina = 1; ; pagina++) {
+    const { data, error: usersError } = await admin.auth.admin.listUsers({
+      page: pagina,
+      perPage: PER_PAGE,
+    });
+    if (usersError) throw new Error(usersError.message);
+    users.push(...data.users);
+    if (data.users.length < PER_PAGE) break;
+  }
+
+  // Las cuentas de la app móvil no son usuarios del ERP: no tienen ni pueden
+  // tener un rol (lo impide el trigger trg_usuarios_roles_excluye_socios), así
+  // que en esta pantalla sólo serían ruido. Se administran desde
+  // /socios/app-movil. Se excluyen también las revocadas: siguen siendo cuentas
+  // de socios, no de staff.
+  const { data: cuentasSocios } = await admin
+    .from("socios_usuarios")
+    .select("user_id");
+  const esDeSocio = new Set((cuentasSocios ?? []).map((c) => c.user_id));
 
   // Get all user-role assignments
   const { data: userRoles } = await admin
@@ -54,7 +75,9 @@ export async function getUsuarios(): Promise<UsuarioSistema[]> {
     });
   }
 
-  return users.map((u) => {
+  return users
+    .filter((u) => !esDeSocio.has(u.id))
+    .map((u) => {
     const roleInfo = rolesMap.get(u.id);
     return {
       id: u.id,

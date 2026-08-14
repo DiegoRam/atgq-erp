@@ -2,7 +2,14 @@
 
 import { useEffect, useState, useCallback, useMemo, Fragment } from "react";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Trash2, UserPlus, Search } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  UserPlus,
+  Search,
+  TriangleAlert,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,11 +35,21 @@ export default function GruposFamiliaresPage() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [soloSinTitular, setSoloSinTitular] = useState(false);
+
+  // Los grupos sin titular no son una curiosidad: la app móvil le niega las
+  // cuotas del grupo a TODOS sus miembros (falla cerrada antes que inferir
+  // quién es el titular). Este filtro es la forma de encontrarlos y corregirlos.
+  const sinTitular = useMemo(
+    () => grupos.filter((g) => !g.titular).length,
+    [grupos],
+  );
 
   const filtered = useMemo(() => {
+    const base = soloSinTitular ? grupos.filter((g) => !g.titular) : grupos;
     const q = search.trim().toLowerCase();
-    if (!q) return grupos;
-    return grupos.filter((g) =>
+    if (!q) return base;
+    return base.filter((g) =>
       g.titular
         ? [
             g.titular.apellido,
@@ -41,7 +58,7 @@ export default function GruposFamiliaresPage() {
           ].some((v) => v?.toLowerCase().includes(q))
         : false,
     );
-  }, [grupos, search]);
+  }, [grupos, search, soloSinTitular]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -97,6 +114,24 @@ export default function GruposFamiliaresPage() {
           className="pl-8"
         />
       </div>
+
+      {sinTitular > 0 ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          <TriangleAlert className="h-4 w-4 shrink-0" />
+          <p className="flex-1">
+            Hay <span className="font-bold">{sinTitular}</span> grupo(s) sin
+            titular designado. Sus miembros no pueden ver las cuotas del grupo
+            en la app móvil hasta que se les asigne uno.
+          </p>
+          <Button
+            variant={soloSinTitular ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSoloSinTitular((v) => !v)}
+          >
+            {soloSinTitular ? "Ver todos" : "Ver sólo sin titular"}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="overflow-x-auto rounded-md border">
         <Table>

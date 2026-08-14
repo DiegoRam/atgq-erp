@@ -149,6 +149,14 @@
 
 ---
 
+## FASE 12 — App móvil para socios
+
+| ID | Tarea | Estado | Fecha |
+|----|-------|--------|-------|
+| P12.1 | API `/api/mobile/v1/*` (perfil, cuotas, compras, grupo familiar) + vínculo `auth.users ↔ socios` con códigos de invitación y pantalla de emisión en el ERP | ✅ | 2026-08-13 |
+
+---
+
 ## Bloqueadores activos
 
 _Ninguno por ahora._
