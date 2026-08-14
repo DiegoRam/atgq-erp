@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 /**
  * Códigos de invitación de la app móvil: generación, normalización y hash.
@@ -132,12 +132,4 @@ export function ipConfiable(request: Request): string | null {
     request.headers.get("x-real-ip") ??
     null
   );
-}
-
-/** Comparación en tiempo constante, para chequeos de igualdad sobre secretos. */
-export function igualSeguro(a: string, b: string): boolean {
-  const ba = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (ba.length !== bb.length) return false;
-  return timingSafeEqual(ba, bb);
 }

@@ -55,8 +55,35 @@ export async function getEstadoAppMovil(params: {
       delete copia.total_filas;
       return copia as FilaAppMovil;
     }),
-    total: filas.length > 0 ? Number(filas[0].total_filas) : 0,
+    // Página vacía no significa "no hay nada": puede ser que el operador se
+    // pasó del final, y ahí se pierde el count(*) OVER (). Devolver 0 haría
+    // colapsar el paginador del DataTable sin forma de volver a la página 1.
+    total:
+      filas.length > 0
+        ? Number(filas[0].total_filas)
+        : page > 1
+          ? await contarEstadoAppMovil(supabase, params)
+          : 0,
   };
+}
+
+/**
+ * Recuento de respaldo para cuando la página pedida cayó más allá del final y
+ * la RPC no devolvió ninguna fila de la cual leer `total_filas`. Cuesta una
+ * consulta extra, y sólo en ese caso.
+ */
+async function contarEstadoAppMovil(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: { search?: string; estado?: string },
+): Promise<number> {
+  const { data } = await supabase.rpc("listar_estado_app_movil", {
+    p_search: params.search?.trim() || null,
+    p_estado: params.estado || "todos",
+    p_limit: 1,
+    p_offset: 0,
+  });
+  const primera = (data ?? [])[0] as { total_filas?: number } | undefined;
+  return primera ? Number(primera.total_filas ?? 0) : 0;
 }
 
 /**
@@ -114,8 +141,12 @@ export async function emitirCodigosMasivo(
   socioIds: string[],
   dias = 14,
 ): Promise<CodigoEmitido[]> {
-  if (socioIds.length === 0) return [];
-  if (socioIds.length > MAX_LOTE) {
+  // Sin dedup, un id repetido en el lote hace saltar el índice parcial
+  // ux_socios_invitaciones_socio_viva y aborta la tanda ENTERA, no sólo esa fila.
+  const ids = [...new Set(socioIds)];
+
+  if (ids.length === 0) return [];
+  if (ids.length > MAX_LOTE) {
     throw new Error(
       `El lote no puede superar los ${MAX_LOTE} socios. Filtre por categoría y emita por tandas.`,
     );
@@ -126,7 +157,7 @@ export async function emitirCodigosMasivo(
   // El código en claro se conserva sólo en memoria de este request, indexado
   // por socio, para poder devolverlo junto con el nombre. A la base va el hash.
   const claros = new Map<string, string>();
-  const items = socioIds.map((socioId) => {
+  const items = ids.map((socioId) => {
     const codigo = generarCodigo();
     claros.set(socioId, codigo);
     return {
@@ -183,10 +214,14 @@ export async function revocarCodigo(socioId: string): Promise<number> {
 /**
  * Desvincula la cuenta de un socio y además la banea en Auth.
  *
- * Las dos cosas hacen falta: revocar la fila de `socios_usuarios` hace que las
- * RPCs devuelvan vacío de inmediato, pero el access token que el teléfono ya
- * tiene sigue siendo un token válido del proyecto hasta que expire (1 h). El
- * ban lo corta ahí mismo y evita que pueda renovarlo.
+ * Lo que corta el acceso a los datos en el acto es la fila revocada: las RPCs
+ * `mobile_*` filtran por `revocado_at IS NULL`, así que el token deja de servir
+ * para leer nada aunque siga siendo criptográficamente válido.
+ *
+ * El ban cubre lo otro: GoTrue no valida los JWT ya emitidos contra la base, o
+ * sea que el access token en el teléfono sigue siendo un token válido del
+ * proyecto hasta que expire (1 h). El ban no lo invalida — impide el login y
+ * el refresh, que es lo que evita que la cuenta se renueve indefinidamente.
  */
 export async function desvincularCuenta(socioId: string): Promise<void> {
   const supabase = await createClient();

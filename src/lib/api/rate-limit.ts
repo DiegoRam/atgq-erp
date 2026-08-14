@@ -27,12 +27,16 @@ export type ResultadoLimite =
  * un bucket fijo ("desconocida"), pero eso hace que 11 intentos de cualquiera
  * bloqueen las activaciones de TODOS los socios durante una hora — un DoS
  * trivial contra la funcionalidad entera. Se usa entonces una clave derivada
- * del código intentado: frena a alguien machacando un mismo código y, sobre
- * todo, no deja que un request afecte a los demás.
+ * del código intentado.
  *
- * Es una degradación consciente: sin un identificador de cliente confiable no
- * se puede limitar por cliente, y punto. En Vercel —que es el despliegue real—
- * la cabecera siempre está, así que este camino es el de desarrollo local.
+ * SIN VUELTAS: en ese modo NO hay protección contra fuerza bruta. Un atacante
+ * que prueba un código distinto por request cae en un bucket distinto cada vez
+ * y nunca se bloquea. Lo único que frena es machacar un mismo código. Se elige
+ * porque la alternativa (bucket global) es un DoS seguro contra todos los
+ * socios, mientras que esto sólo pierde protección en un despliegue mal
+ * configurado. En Vercel —el despliegue real— la cabecera siempre está, así
+ * que este camino es el de desarrollo local; si alguna vez se despliega fuera
+ * de Vercel, hay que poner un proxy que setee la IP antes de exponer la API.
  */
 export async function chequearLimite(
   admin: SupabaseClient,

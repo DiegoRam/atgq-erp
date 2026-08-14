@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/fetch-all-rows";
 import { isAdmin } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import type { UsuarioSistema } from "@/types/security";
@@ -52,10 +53,22 @@ export async function getUsuarios(): Promise<UsuarioSistema[]> {
   // que en esta pantalla sólo serían ruido. Se administran desde
   // /socios/app-movil. Se excluyen también las revocadas: siguen siendo cuentas
   // de socios, no de staff.
-  const { data: cuentasSocios } = await admin
-    .from("socios_usuarios")
-    .select("user_id");
-  const esDeSocio = new Set((cuentasSocios ?? []).map((c) => c.user_id));
+  // fetchAllRows y no un .select() pelado: PostgREST corta en 1000 filas en
+  // silencio, y acá eso reintroduce exactamente el problema que la paginación
+  // de arriba acaba de resolver — a partir de la cuenta de socio número 1.001
+  // el filtro dejaría de reconocerlas y volverían a aparecer en el listado.
+  const cuentasSocios = await fetchAllRows<{ user_id: string }>((desde, hasta) =>
+    admin
+      .from("socios_usuarios")
+      .select("user_id")
+      // Sólo los vínculos vivos: una cuenta ya desvinculada dejó de ser de la
+      // app móvil, y ocultarla acá la volvería invisible e inadministrable
+      // (no habría forma de borrarla desde ninguna pantalla).
+      .is("revocado_at", null)
+      .order("user_id")
+      .range(desde, hasta),
+  );
+  const esDeSocio = new Set(cuentasSocios.map((c) => c.user_id));
 
   // Get all user-role assignments
   const { data: userRoles } = await admin

@@ -108,6 +108,17 @@ export default function AppMovilPage() {
     }
   }
 
+  function pedirReemitir(fila: FilaAppMovil) {
+    setConfirmacion({
+      titulo: "¿Reemitir el código?",
+      descripcion: `${fila.apellido}, ${fila.nombre} ya tiene un código vigente. Emitir uno nuevo invalida el anterior: si ya se lo entregó, va a dejar de funcionar.`,
+      accion: async () => {
+        const codigo = await emitirCodigo(fila.socio_id);
+        setEmitido(codigo);
+      },
+    });
+  }
+
   function pedirRevocar(fila: FilaAppMovil) {
     setConfirmacion({
       titulo: "¿Revocar el código?",
@@ -212,7 +223,16 @@ export default function AppMovilPage() {
                   variant="outline"
                   size="sm"
                   disabled={procesando}
-                  onClick={() => handleEmitir(f)}
+                  onClick={() => {
+                    // Reemitir revoca el código anterior. Si está vigente, el
+                    // socio puede tenerlo en la mano y dejaría de funcionar sin
+                    // que nadie se entere hasta que lo intente usar.
+                    if (f.estado === "codigo_vigente") {
+                      pedirReemitir(f);
+                    } else {
+                      handleEmitir(f);
+                    }
+                  }}
                 >
                   {f.estado === "sin_codigo" ? "Emitir" : "Reemitir"}
                 </Button>

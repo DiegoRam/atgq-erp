@@ -177,9 +177,19 @@ CREATE POLICY "select_socios_usuarios" ON socios_usuarios FOR SELECT TO authenti
 CREATE OR REPLACE FUNCTION socios_usuarios_excluye_staff()
 RETURNS trigger
 LANGUAGE plpgsql
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 BEGIN
+  -- El lock serializa este chequeo contra el del trigger espejo para el MISMO
+  -- usuario. Sin él, bajo READ COMMITTED dos transacciones concurrentes (una
+  -- insertando el vínculo, otra insertando el rol) no se ven entre sí: los dos
+  -- EXISTS dan falso, ambas commitean, y queda una cuenta que es socio Y staff
+  -- a la vez — o sea con `socios:leer`, que es lectura del padrón entero por
+  -- PostgREST directo, esquivando todas las funciones mobile_*. Es la
+  -- invariante que esta migración declara como su mitigación más importante,
+  -- así que no puede depender de que nadie escriba las dos tablas a la vez.
+  PERFORM pg_advisory_xact_lock(hashtextextended(NEW.user_id::text, 0));
+
   -- Sólo aplica a vínculos vivos: revocar (poner revocado_at) siempre se permite.
   IF NEW.revocado_at IS NULL
      AND EXISTS (SELECT 1 FROM usuarios_roles ur WHERE ur.user_id = NEW.user_id) THEN
@@ -200,9 +210,14 @@ CREATE TRIGGER trg_socios_usuarios_excluye_staff
 CREATE OR REPLACE FUNCTION usuarios_roles_excluye_socios()
 RETURNS trigger
 LANGUAGE plpgsql
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 BEGIN
+  -- Mismo lock que en socios_usuarios_excluye_staff, sobre la misma clave: es
+  -- lo que hace que los dos chequeos no puedan correr en paralelo para un
+  -- mismo usuario. Ver el comentario largo allá.
+  PERFORM pg_advisory_xact_lock(hashtextextended(NEW.user_id::text, 0));
+
   IF EXISTS (
     SELECT 1 FROM socios_usuarios su
      WHERE su.user_id = NEW.user_id AND su.revocado_at IS NULL
@@ -229,7 +244,7 @@ RETURNS uuid
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT su.socio_id
     FROM socios_usuarios su
@@ -252,7 +267,7 @@ RETURNS TABLE (user_id uuid, socio_id uuid, nro_socio integer)
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT auth.uid(), su.socio_id, s.nro_socio
     FROM socios_usuarios su
@@ -299,7 +314,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT
     s.id,
@@ -353,7 +368,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT
     c.id, c.periodo, c.monto, c.pagada, c.fecha_pago,
@@ -394,7 +409,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT
     count(*) FILTER (WHERE NOT c.pagada)::integer,
@@ -430,7 +445,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT
     v.id, v.fecha, v.total, mc.nombre, d.nombre,
@@ -466,7 +481,7 @@ RETURNS jsonb
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT jsonb_build_object(
     'id',          v.id,
@@ -525,7 +540,7 @@ RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_socio   uuid := mobile_socio_actual();
@@ -571,7 +586,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_grupo uuid := mobile_mi_grupo_titular();
@@ -620,7 +635,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_grupo uuid := mobile_mi_grupo_titular();
@@ -666,7 +681,7 @@ CREATE OR REPLACE FUNCTION emitir_invitacion_socio(
 RETURNS TABLE (invitacion_id uuid, expira_at timestamptz)
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_user uuid := auth.uid();
@@ -720,7 +735,7 @@ CREATE OR REPLACE FUNCTION emitir_invitaciones_socios(
 RETURNS TABLE (socio_id uuid, invitacion_id uuid, expira_at timestamptz)
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_user uuid := auth.uid();
@@ -776,7 +791,7 @@ CREATE OR REPLACE FUNCTION revocar_invitacion_socio(p_socio_id uuid)
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_user uuid := auth.uid();
@@ -814,7 +829,7 @@ CREATE OR REPLACE FUNCTION desvincular_cuenta_socio(p_socio_id uuid)
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_user    uuid := auth.uid();
@@ -868,7 +883,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 BEGIN
   IF NOT permiso_modulo_todos_los_roles('socios', 'leer') THEN
@@ -948,7 +963,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 BEGIN
   IF NOT permiso_modulo_todos_los_roles('socios', 'escribir') THEN
@@ -1018,7 +1033,7 @@ RETURNS TABLE (
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT
     CASE
@@ -1051,7 +1066,7 @@ CREATE OR REPLACE FUNCTION mobile_canjear_invitacion(p_codigo_hash bytea, p_user
 RETURNS TABLE (socio_id uuid, nro_socio integer, apellido text, nombre text)
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_inv socios_invitaciones%ROWTYPE;
@@ -1086,11 +1101,19 @@ CREATE OR REPLACE FUNCTION registrar_intento_canje(p_ip_hash bytea)
 RETURNS TABLE (bloqueado boolean, retry_after integer)
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_row canje_rate_limit%ROWTYPE;
 BEGIN
+  -- Purga oportunista: sin esto la tabla crece de forma monótona (sólo se
+  -- borraba una fila en el canje exitoso, que es el caso raro). Una fila cuya
+  -- ventana venció hace más de un día y que no está bloqueada ya no aporta
+  -- nada. Va acá y no en un cron porque el proyecto no tiene pg_cron activo.
+  DELETE FROM canje_rate_limit
+   WHERE ventana_inicio < now() - interval '1 day'
+     AND (bloqueado_hasta IS NULL OR bloqueado_hasta <= now());
+
   INSERT INTO canje_rate_limit (ip_hash, ventana_inicio, intentos)
   VALUES (p_ip_hash, now(), 1)
   ON CONFLICT (ip_hash) DO UPDATE
@@ -1135,7 +1158,7 @@ CREATE OR REPLACE FUNCTION limpiar_intento_canje(p_ip_hash bytea)
 RETURNS void
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   DELETE FROM canje_rate_limit WHERE ip_hash = p_ip_hash;
 $$;

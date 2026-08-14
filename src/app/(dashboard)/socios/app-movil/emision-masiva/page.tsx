@@ -38,9 +38,15 @@ export default function EmisionMasivaPage() {
       .catch(() => toast.error("No se pudieron cargar las categorías"));
   }, []);
 
+  // OJO: esta función NO puede limpiar `emitidos`. `emitir()` la llama al
+  // terminar para refrescar el conteo de candidatos, y si acá se hiciera
+  // setEmitidos([]) el último write ganaría y borraría los códigos recién
+  // emitidos — que sólo existen en claro en ese estado de React, porque la
+  // base guarda únicamente sus hashes. Serían irrecuperables: la única salida
+  // sería reemitir, revocando otra vez los que el operador ya repartió.
+  // El limpiado ocurre al cambiar de lote (ver onValueChange del Select).
   const previsualizar = useCallback(async () => {
     setCargando(true);
-    setEmitidos([]);
     try {
       const res = await getSociosParaEmision(
         categoriaId === "todas" ? undefined : categoriaId,
@@ -109,7 +115,15 @@ export default function EmisionMasivaPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={categoriaId} onValueChange={setCategoriaId}>
+            <Select
+              value={categoriaId}
+              onValueChange={(v) => {
+                // Cambiar de lote sí descarta los códigos mostrados: pasan a
+                // ser de otra tanda y dejarlos en pantalla confundiría.
+                setEmitidos([]);
+                setCategoriaId(v);
+              }}
+            >
               <SelectTrigger className="w-[280px]">
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>
