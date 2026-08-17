@@ -40,7 +40,13 @@ export function WorkspaceTabs() {
   if (tabs.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-0.5 overflow-x-auto border-b bg-muted px-2 py-1">
+    // data-print-hide: no es <header>/<nav>, así que las reglas @media print
+    // que ocultan esos tags (p. ej. la del padrón, /socios/padron/page.tsx)
+    // no lo alcanzan sin este hook explícito.
+    <div
+      data-print-hide
+      className="flex items-center gap-0.5 overflow-x-auto border-b bg-muted px-2 py-1"
+    >
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         const Icon = isReportTab(tab.href) ? BarChart3 : Table2;

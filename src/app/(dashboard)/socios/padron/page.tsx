@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { flushSync } from "react-dom";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -21,40 +27,83 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Download, FileSpreadsheet, Printer, Search } from "lucide-react";
-import { getPadron } from "./actions";
+import { getPadron, getPeriodoCorte } from "./actions";
 import { getCategorias } from "../actions";
-import { formatDate, exportToCSV } from "@/lib/format";
+import { formatDateOnly, todayISO, exportToCSV } from "@/lib/format";
 import { exportToExcel } from "@/lib/export";
-import type { Socio, CategoriaSocial } from "@/types/socios";
+import type { PadronRow, CategoriaSocial } from "@/types/socios";
+
+const PAGE_SIZE = 100;
+
+function formatPeriodoCorte(periodo: string | null): string {
+  if (!periodo) return "—";
+  return format(new Date(`${periodo}T00:00:00`), "MM/yyyy", { locale: es });
+}
+
+type Column = {
+  key: string;
+  label: string;
+  render: (s: PadronRow) => React.ReactNode;
+};
 
 export default function PadronPage() {
-  const [socios, setSocios] = useState<Socio[]>([]);
+  const [socios, setSocios] = useState<PadronRow[]>([]);
+  const [periodoCorte, setPeriodoCorte] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<CategoriaSocial[]>([]);
   const [selectedCategoria, setSelectedCategoria] = useState<string>("all");
+  const [soloHabilitados, setSoloHabilitados] = useState(false);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [printAll, setPrintAll] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<"sin_permiso" | "error" | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return socios;
-    return socios.filter((s) =>
-      [s.apellido, s.nombre, s.dni, String(s.nro_socio), s.localidad].some(
-        (v) => v?.toLowerCase().includes(q),
-      ),
-    );
-  }, [socios, search]);
+  // Descarta respuestas que llegan fuera de orden: con ~8.400 socios el fetch
+  // tarda segundos, y si el usuario cambia el toggle o la categoría dos veces
+  // en esa ventana, una respuesta vieja podría resolver última y mostrar un
+  // listado que no corresponde al filtro vigente.
+  const requestIdRef = useRef(0);
+  const printTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const categoriasDisponibles = useMemo(
+    () =>
+      soloHabilitados
+        ? categorias.filter((c) => c.habilita_voto)
+        : categorias,
+    [categorias, soloHabilitados],
+  );
 
   const fetchData = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setIsLoading(true);
+    setError(null);
     try {
-      const data = await getPadron(
-        selectedCategoria !== "all" ? selectedCategoria : undefined,
-      );
-      setSocios(data as Socio[]);
+      const [data, corte] = await Promise.all([
+        getPadron(
+          selectedCategoria !== "all" ? selectedCategoria : undefined,
+          soloHabilitados,
+        ),
+        getPeriodoCorte(),
+      ]);
+      if (requestIdRef.current !== requestId) return; // respuesta obsoleta
+      setSocios(data);
+      setPeriodoCorte(corte);
+    } catch (err) {
+      if (requestIdRef.current !== requestId) return;
+      const message = err instanceof Error ? err.message : "";
+      if (message.includes("sin_permiso")) {
+        setError("sin_permiso");
+        toast.error("No tenés permiso para ver el padrón.");
+      } else {
+        setError("error");
+        toast.error("Error al cargar el padrón. Reintentá en unos segundos.");
+      }
+      setSocios([]);
     } finally {
-      setIsLoading(false);
+      if (requestIdRef.current === requestId) setIsLoading(false);
     }
-  }, [selectedCategoria]);
+  }, [selectedCategoria, soloHabilitados]);
 
   useEffect(() => {
     fetchData();
@@ -64,124 +113,346 @@ export default function PadronPage() {
     getCategorias().then(setCategorias);
   }, []);
 
-  const padronHeaders = [
-    { key: "nro_socio", label: "Nro Socio" },
-    { key: "apellido", label: "Apellido" },
-    { key: "nombre", label: "Nombre" },
-    { key: "dni", label: "DNI" },
-    { key: "fecha_alta", label: "Fecha Alta" },
-    { key: "localidad", label: "Localidad" },
-  ];
+  // Cubre también el Ctrl+P nativo del navegador, que no pasa por
+  // handlePrint(). El fallback de printTimeoutRef restaura el estado en
+  // navegadores/webviews donde afterprint no llega a dispararse.
+  useEffect(() => {
+    function handleBeforePrint() {
+      flushSync(() => setPrintAll(true));
+    }
+    function handleAfterPrint() {
+      if (printTimeoutRef.current) {
+        clearTimeout(printTimeoutRef.current);
+        printTimeoutRef.current = null;
+      }
+      flushSync(() => setPrintAll(false));
+      setPrinting(false);
+    }
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+      if (printTimeoutRef.current) clearTimeout(printTimeoutRef.current);
+    };
+  }, []);
+
+  function handleToggleSoloHabilitados(checked: boolean) {
+    setSoloHabilitados(checked);
+    if (checked && selectedCategoria !== "all") {
+      const cat = categorias.find((c) => c.id === selectedCategoria);
+      // Si la categoría elegida no habilita voto, el listado quedaría vacío
+      // sin explicación: volver a "Todas" en vez de eso.
+      if (!cat?.habilita_voto) setSelectedCategoria("all");
+    }
+    setPage(1);
+  }
+
+  function handleCategoriaChange(value: string) {
+    setSelectedCategoria(value);
+    setPage(1);
+  }
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return socios;
+    return socios.filter((s) =>
+      [
+        s.apellido,
+        s.nombre,
+        s.dni,
+        String(s.nro_socio),
+        s.localidad,
+        s.categoria,
+      ].some((v) => v?.toLowerCase().includes(q)),
+    );
+  }, [socios, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+
+  // Render paginado client-side: con ~8.400 socios renderizar todo bloquea
+  // el primer paint. `printAll` fuerza el listado completo justo antes de
+  // window.print() (ver el listener de beforeprint más arriba).
+  const paginated = useMemo(() => {
+    if (printAll) return filtered;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, currentPage, printAll]);
+
+  const sinCuotas = useMemo(
+    () => filtered.filter((s) => s.cuotas_sociales_emitidas === 0).length,
+    [filtered],
+  );
+
+  // Columnas: única fuente para el <TableHeader>, las celdas y colSpan/skeleton
+  // — un columnCount hardcodeado se hubiera desincronizado del header.
+  const columns = useMemo<Column[]>(() => {
+    const base: Column[] = [
+      {
+        key: "nro_socio",
+        label: "Nro Socio",
+        render: (s) => <span className="font-medium">{s.nro_socio}</span>,
+      },
+      { key: "apellido", label: "Apellido", render: (s) => s.apellido },
+      { key: "nombre", label: "Nombre", render: (s) => s.nombre },
+      { key: "dni", label: "DNI", render: (s) => s.dni },
+      { key: "categoria", label: "Categoría", render: (s) => s.categoria },
+      {
+        key: "fecha_alta",
+        label: "Fecha Alta",
+        render: (s) => formatDateOnly(s.fecha_alta),
+      },
+      {
+        key: "localidad",
+        label: "Localidad",
+        render: (s) => s.localidad ?? "—",
+      },
+    ];
+    if (soloHabilitados) {
+      base.push(
+        { key: "edad", label: "Edad", render: (s) => s.edad ?? "—" },
+        {
+          key: "antiguedad_anios",
+          label: "Antigüedad",
+          render: (s) => s.antiguedad_anios,
+        },
+      );
+    }
+    return base;
+  }, [soloHabilitados]);
+
+  const exportHeaders = useMemo(
+    () => columns.map((c) => ({ key: c.key, label: c.label })),
+    [columns],
+  );
+
+  // exportToCSV/exportToExcel leen row[h.key] crudo, sin formatear: se
+  // preformatea acá para no exportar fecha_alta en ISO ni "null" en vez de "—".
+  const exportRows = useMemo(
+    () =>
+      filtered.map((s) => ({
+        ...s,
+        fecha_alta: formatDateOnly(s.fecha_alta),
+        localidad: s.localidad ?? "—",
+        edad: s.edad ?? "—",
+      })),
+    [filtered],
+  );
 
   function handleExportCSV() {
+    const filename = soloHabilitados
+      ? `padron_electoral_${todayISO()}`
+      : `padron_socios_${todayISO()}`;
     exportToCSV(
-      filtered as unknown as Record<string, unknown>[],
-      "padron_socios",
-      padronHeaders,
+      exportRows as unknown as Record<string, unknown>[],
+      filename,
+      exportHeaders,
     );
   }
 
   function handleExportExcel() {
+    const filename = soloHabilitados
+      ? `padron_electoral_${todayISO()}`
+      : `padron_socios_${todayISO()}`;
+    const sheetName = soloHabilitados ? "Padrón Electoral" : "Padrón";
     exportToExcel(
-      filtered as unknown as Record<string, unknown>[],
-      "padron_socios",
-      "Padrón",
-      padronHeaders,
+      exportRows as unknown as Record<string, unknown>[],
+      filename,
+      sheetName,
+      exportHeaders,
     );
+  }
+
+  function handlePrint() {
+    setPrinting(true);
+    // setTimeout y no flushSync directo acá: hace falta ceder un frame para
+    // que el navegador pinte "Imprimiendo…" antes de que el listener de
+    // beforeprint dispare el flushSync que monta ~8.400 filas y congela el
+    // hilo principal varios segundos.
+    setTimeout(() => {
+      window.print();
+      // Fallback: en navegadores/webviews donde afterprint no dispara (o
+      // print() no bloquea, p. ej. iOS Safari) esto restaura igual el estado.
+      printTimeoutRef.current = setTimeout(() => {
+        setPrintAll(false);
+        setPrinting(false);
+      }, 8000);
+    }, 50);
   }
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Padrón de Socios"
-        actions={
-          <div className="flex items-center gap-2">
-            <Select
-              value={selectedCategoria}
-              onValueChange={setSelectedCategoria}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Todas las categorías" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las categorías</SelectItem>
-                {categorias.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={handleExportCSV}>
-              <Download className="mr-1.5 h-4 w-4" />
-              CSV
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportExcel}>
-              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
-              Excel
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.print()}
-            >
-              <Printer className="mr-1.5 h-4 w-4" />
-              Imprimir
-            </Button>
-          </div>
-        }
-      />
+      {/* print:hidden acá, no en PageHeader (compartido con otras pantallas):
+          evita el <h1> duplicado con el encabezado de impresión de abajo. */}
+      <div className="print:hidden">
+        <PageHeader
+          title={soloHabilitados ? "Padrón Electoral" : "Padrón de Socios"}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="solo-habilitados"
+                  checked={soloHabilitados}
+                  onCheckedChange={handleToggleSoloHabilitados}
+                />
+                <Label
+                  htmlFor="solo-habilitados"
+                  className="whitespace-nowrap"
+                >
+                  Solo habilitados a votar
+                </Label>
+              </div>
+              <Select
+                value={selectedCategoria}
+                onValueChange={handleCategoriaChange}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Todas las categorías" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  {categoriasDisponibles.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+                disabled={!!error}
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportExcel}
+                disabled={!!error}
+              >
+                <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+                Excel
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                disabled={printing || !!error}
+              >
+                <Printer className="mr-1.5 h-4 w-4" />
+                {printing ? "Imprimiendo…" : "Imprimir"}
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
       <div className="relative sm:max-w-xs print:hidden">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por nro, apellido, nombre, DNI o localidad..."
+          placeholder="Buscar por nro, apellido, nombre, DNI, categoría o localidad..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="pl-8"
         />
+      </div>
+
+      {/* Encabezado de impresión: lo que hace auditable la hoja emitida. */}
+      <div className="hidden print:block">
+        <h1 className="text-lg font-bold">
+          {soloHabilitados ? "Padrón Electoral" : "Padrón de Socios"}
+        </h1>
+        <p className="text-sm">
+          Fecha de emisión: {formatDateOnly(todayISO())}
+        </p>
+        <p className="text-sm">
+          Total: {filtered.length}{" "}
+          {soloHabilitados ? "habilitados a votar" : "socios"}
+        </p>
+        <p className="text-sm">
+          Categoría:{" "}
+          {selectedCategoria === "all"
+            ? "Todas"
+            : (categorias.find((c) => c.id === selectedCategoria)?.nombre ??
+              "—")}
+          {search.trim() && ` · Búsqueda: "${search.trim()}"`}
+        </p>
+        {soloHabilitados && (
+          <p className="text-sm">
+            Criterios: categoría habilitada, 18 años cumplidos, 1 año de
+            antigüedad,
+            {periodoCorte
+              ? ` cuota social al día (corte: ${formatPeriodoCorte(periodoCorte)}).`
+              : ' sin criterio de deuda activo (no hay cuotas sociales "afecta padrón" emitidas a la fecha).'}
+          </p>
+        )}
       </div>
 
       <div className="rounded-md border print:border-none">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nro Socio</TableHead>
-              <TableHead>Apellido</TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead>DNI</TableHead>
-              <TableHead>Categoría</TableHead>
-              <TableHead>Fecha Alta</TableHead>
-              <TableHead>Localidad</TableHead>
+              {columns.map((c) => (
+                <TableHead key={c.key}>{c.label}</TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
-                    <TableCell key={j}>
+                  {columns.map((c) => (
+                    <TableCell key={c.key}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
                   ))}
                 </TableRow>
               ))
-            ) : filtered.length === 0 ? (
+            ) : error ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  <p className="text-destructive">
+                    {error === "sin_permiso"
+                      ? "No tenés permiso para ver el padrón."
+                      : "Error al cargar el padrón. Reintentá en unos segundos."}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={fetchData}
+                  >
+                    Reintentar
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ) : paginated.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   Sin resultados.
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((s) => (
+              paginated.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.nro_socio}</TableCell>
-                  <TableCell>{s.apellido}</TableCell>
-                  <TableCell>{s.nombre}</TableCell>
-                  <TableCell>{s.dni}</TableCell>
-                  <TableCell>{s.categoria?.nombre ?? "—"}</TableCell>
-                  <TableCell>{formatDate(s.fecha_alta)}</TableCell>
-                  <TableCell>{s.localidad ?? "—"}</TableCell>
+                  {columns.map((c) => (
+                    <TableCell key={c.key}>{c.render(s)}</TableCell>
+                  ))}
                 </TableRow>
               ))
             )}
@@ -189,14 +460,78 @@ export default function PadronPage() {
         </Table>
       </div>
 
-      <p className="text-sm text-muted-foreground print:hidden">
-        Total: {filtered.length} socios
-      </p>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between print:hidden">
+          <p className="text-sm text-muted-foreground">
+            Total: {filtered.length}{" "}
+            {soloHabilitados ? "habilitados a votar" : "socios"}
+            {search.trim() && ` (de ${socios.length})`}
+            {totalPages > 1 &&
+              ` · ${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(currentPage * PAGE_SIZE, filtered.length)}`}
+          </p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1}
+                onClick={() => setPage(currentPage - 1)}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage(currentPage + 1)}
+              >
+                Siguiente
+              </Button>
+            </div>
+          )}
+        </div>
+        {soloHabilitados &&
+          !isLoading &&
+          !error &&
+          (periodoCorte === null ? (
+            <p
+              className="text-sm font-medium text-amber-600 print:hidden"
+              role="alert"
+            >
+              Sin criterio de deuda activo: no hay cuotas sociales
+              (&quot;afecta padrón&quot;) emitidas a la fecha.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground print:hidden">
+              Al día hasta {formatPeriodoCorte(periodoCorte)} inclusive.
+            </p>
+          ))}
+        {soloHabilitados && !isLoading && !error && (
+          <p className="text-xs text-muted-foreground">
+            {sinCuotas} habilitados no tienen cuotas sociales emitidas
+          </p>
+        )}
+      </div>
 
       <style jsx global>{`
         @media print {
-          header, nav, [data-print-hide] { display: none !important; }
-          main { padding: 0 !important; }
+          header,
+          nav,
+          [data-print-hide] {
+            display: none !important;
+          }
+          main {
+            padding: 0 !important;
+          }
+          thead {
+            display: table-header-group;
+          }
+          tr {
+            break-inside: avoid;
+          }
         }
       `}</style>
     </div>

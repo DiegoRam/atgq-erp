@@ -22,6 +22,7 @@ export async function createTipoCuota(formData: TipoCuotaFormData) {
     nombre: formData.nombre,
     descripcion: formData.descripcion || null,
     activo: formData.activo,
+    afecta_padron: formData.afecta_padron,
   });
   if (error) {
     if (error.code === "23505") {
@@ -56,6 +57,7 @@ export async function updateTipoCuota(id: string, formData: TipoCuotaFormData) {
       nombre: formData.nombre,
       descripcion: formData.descripcion || null,
       activo: formData.activo,
+      afecta_padron: formData.afecta_padron,
     })
     .eq("id", id);
 

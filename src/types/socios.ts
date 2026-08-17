@@ -70,6 +70,8 @@ export interface CategoriaSocial {
   activa: boolean;
   /** Si sus socios cuentan como activos en el dashboard y en el filtro Estado */
   cuenta_como_activo: boolean;
+  /** Si sus socios están habilitados a votar en asamblea (padrón electoral) */
+  habilita_voto: boolean;
 }
 
 export interface MetodoCobranza {
@@ -114,11 +116,42 @@ export interface SocioMoroso {
   ultima_cuota_pagada: string | null;
 }
 
+/**
+ * Fila del RPC `get_padron` — espejo exacto de su RETURNS TABLE.
+ *
+ * `categoria` viene plano (texto), no como el objeto anidado de `Socio`.
+ * `edad` y `antiguedad_anios` los calcula Postgres con `age()` contra
+ * `current_date`: no recalcularlos en el cliente (`formatAntiguedad` parsea la
+ * fecha como medianoche UTC y en ART se corre un día, justo el del aniversario).
+ * `periodo_corte` es el último período de cuota social emitido —el corte del
+ * criterio "al día"— y es igual en todas las filas; `null` si el club nunca
+ * emitió una cuota social.
+ */
+export interface PadronRow {
+  id: string;
+  nro_socio: number;
+  apellido: string;
+  nombre: string;
+  dni: string;
+  categoria_id: string;
+  categoria: string;
+  fecha_alta: string;
+  localidad: string | null;
+  fecha_nacimiento: string | null;
+  edad: number | null;
+  antiguedad_anios: number;
+  habilita_voto: boolean;
+  cuotas_sociales_emitidas: number;
+  periodo_corte: string | null;
+}
+
 export interface TipoCuota {
   id: string;
   nombre: string;
   descripcion: string | null;
   activo: boolean;
+  /** Si una cuota impaga de este tipo inhabilita a votar en asamblea */
+  afecta_padron: boolean;
 }
 
 export interface CategoriaSocialFormData {
@@ -127,12 +160,14 @@ export interface CategoriaSocialFormData {
   monto_base?: number | null;
   activa: boolean;
   cuenta_como_activo: boolean;
+  habilita_voto: boolean;
 }
 
 export interface TipoCuotaFormData {
   nombre: string;
   descripcion?: string | null;
   activo: boolean;
+  afecta_padron: boolean;
 }
 
 export interface MetodoCobranzaFormData {

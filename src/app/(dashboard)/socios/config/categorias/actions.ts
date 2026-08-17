@@ -24,6 +24,7 @@ export async function createCategoriaSocial(formData: CategoriaSocialFormData) {
     monto_base: formData.monto_base ?? null,
     activa: formData.activa,
     cuenta_como_activo: formData.cuenta_como_activo,
+    habilita_voto: formData.habilita_voto,
   });
   if (error) {
     if (error.code === "23505") {
@@ -60,6 +61,7 @@ export async function updateCategoriaSocial(id: string, formData: CategoriaSocia
       monto_base: formData.monto_base ?? null,
       activa: formData.activa,
       cuenta_como_activo: formData.cuenta_como_activo,
+      habilita_voto: formData.habilita_voto,
     })
     .eq("id", id);
 

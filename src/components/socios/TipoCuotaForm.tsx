@@ -51,12 +51,15 @@ export function TipoCuotaForm({
         nombre: tipoCuota.nombre,
         descripcion: tipoCuota.descripcion,
         activo: tipoCuota.activo,
+        afecta_padron: tipoCuota.afecta_padron,
       });
     } else if (open) {
       reset({
         nombre: "",
         descripcion: null,
         activo: true,
+        // Falla cerrada: un tipo de cuota nuevo no inhabilita el voto por omisión.
+        afecta_padron: false,
       });
     }
   }, [open, tipoCuota, reset]);
@@ -84,6 +87,7 @@ export function TipoCuotaForm({
   }
 
   const activoValue = watch("activo");
+  const afectaPadronValue = watch("afecta_padron");
 
   return (
     <FormModal
@@ -119,6 +123,21 @@ export function TipoCuotaForm({
             onCheckedChange={(v) => setValue("activo", v)}
           />
           <Label htmlFor="activo">Activo</Label>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="afecta_padron"
+              checked={afectaPadronValue ?? false}
+              onCheckedChange={(v) => setValue("afecta_padron", v)}
+            />
+            <Label htmlFor="afecta_padron">Afecta padrón electoral</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Prendelo sólo en la cuota social: una cuota impaga de este tipo
+            inhabilita a votar en asamblea.
+          </p>
         </div>
       </div>
     </FormModal>
