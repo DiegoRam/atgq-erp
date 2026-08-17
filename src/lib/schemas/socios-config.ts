@@ -6,6 +6,7 @@ export const categoriaSocialSchema = z.object({
   monto_base: z.number().min(0, "El monto debe ser mayor o igual a 0").nullable().optional(),
   activa: z.boolean(),
   cuenta_como_activo: z.boolean(),
+  habilita_voto: z.boolean(),
 });
 
 export type CategoriaSocialSchemaType = z.infer<typeof categoriaSocialSchema>;
@@ -14,6 +15,7 @@ export const tipoCuotaSchema = z.object({
   nombre: z.string().min(1, "Nombre requerido"),
   descripcion: z.string().nullable().optional(),
   activo: z.boolean(),
+  afecta_padron: z.boolean(),
 });
 
 export type TipoCuotaSchemaType = z.infer<typeof tipoCuotaSchema>;

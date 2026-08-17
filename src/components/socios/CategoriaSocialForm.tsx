@@ -53,6 +53,7 @@ export function CategoriaSocialForm({
         monto_base: categoria.monto_base,
         activa: categoria.activa,
         cuenta_como_activo: categoria.cuenta_como_activo,
+        habilita_voto: categoria.habilita_voto,
       });
     } else if (open) {
       reset({
@@ -61,6 +62,8 @@ export function CategoriaSocialForm({
         monto_base: null,
         activa: true,
         cuenta_como_activo: true,
+        // Falla cerrada: una categoría nueva no da voto por omisión.
+        habilita_voto: false,
       });
     }
   }, [open, categoria, reset]);
@@ -91,6 +94,7 @@ export function CategoriaSocialForm({
 
   const activaValue = watch("activa");
   const cuentaComoActivoValue = watch("cuenta_como_activo");
+  const habilitaVotoValue = watch("habilita_voto");
 
   return (
     <FormModal
@@ -155,6 +159,21 @@ export function CategoriaSocialForm({
           <p className="text-xs text-muted-foreground">
             Apagalo en categorías de baja o inactividad: sus socios quedan fuera
             del KPI &ldquo;Socios Activos&rdquo; y del filtro Activos del padrón.
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="habilita_voto"
+              checked={habilitaVotoValue ?? false}
+              onCheckedChange={(v) => setValue("habilita_voto", v)}
+            />
+            <Label htmlFor="habilita_voto">Habilita voto</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Prendelo si los socios de esta categoría pueden votar en asamblea.
+            Es una de las condiciones del padrón electoral.
           </p>
         </div>
       </div>

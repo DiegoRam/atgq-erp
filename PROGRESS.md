@@ -157,9 +157,25 @@
 
 ---
 
+## FASE 13 — Padrón electoral
+
+| ID | Tarea | Estado | Fecha |
+|----|-------|--------|-------|
+| P13.1 | Toggle "Solo habilitados a votar" en `/socios/padron` (categoría + 18 años + 1 año de antigüedad + al día de cuota social), banderas `habilita_voto` / `afecta_padron` en el ABM, y fin del truncamiento a 1000 filas | ✅ | 2026-08-17 |
+
+---
+
 ## Bloqueadores activos
 
 _Ninguno por ahora._
+
+## Decisiones tomadas
+
+- **Corte del criterio "al día": global** (P13.1, 2026-08-17). Se evaluó el corte por socio, que contiene mejor los errores de carga —un mes mal tipeado *dentro* del pasado todavía mueve el corte de todos—, pero abre otro agujero: un socio con una única cuota vieja impaga quedaría habilitado. Con datos limpios ambos dan 28; con una cuota tipeada en 2030, global-acotado da 28 y por-socio 27. **Queda el global acotado al mes en curso.**
+
+## Decisiones pendientes del club
+
+- **Quién puede cambiar `habilita_voto` / `afecta_padron`** (P13.1). Hoy se editan con permiso `socios:escribir` — el mismo que una recepcionista necesita para corregir un teléfono— y no queda registro de quién los cambió. Apagar `afecta_padron` en "Cuota Social" desactiva el criterio de deuda de todo el padrón. Falta decidir si se restringen a Administrador y si se auditan.
 
 ---
 

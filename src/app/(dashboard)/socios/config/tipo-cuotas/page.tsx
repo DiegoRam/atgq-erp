@@ -34,6 +34,15 @@ const columns: ColumnDef<TipoCuota>[] = [
     ),
   },
   {
+    accessorKey: "afecta_padron",
+    header: "Afecta padrón",
+    cell: ({ row }) => (
+      <Badge variant={row.original.afecta_padron ? "default" : "secondary"}>
+        {row.original.afecta_padron ? "Sí" : "No"}
+      </Badge>
+    ),
+  },
+  {
     id: "acciones",
     header: "Acciones",
     cell: ({ row, table }) => {

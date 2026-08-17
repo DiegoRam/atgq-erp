@@ -54,6 +54,15 @@ const columns: ColumnDef<CategoriaSocial>[] = [
     ),
   },
   {
+    accessorKey: "habilita_voto",
+    header: "Habilita voto",
+    cell: ({ row }) => (
+      <Badge variant={row.original.habilita_voto ? "default" : "secondary"}>
+        {row.original.habilita_voto ? "Sí" : "No"}
+      </Badge>
+    ),
+  },
+  {
     id: "acciones",
     header: "Acciones",
     cell: ({ row, table }) => {
