@@ -31,6 +31,7 @@ import { getPadron, getPeriodoCorte } from "./actions";
 import { getCategorias } from "../actions";
 import { formatDateOnly, todayISO, exportToCSV } from "@/lib/format";
 import { exportToExcel } from "@/lib/export";
+import { cn } from "@/lib/utils";
 import type { PadronRow, CategoriaSocial } from "@/types/socios";
 
 const PAGE_SIZE = 100;
@@ -44,6 +45,17 @@ type Column = {
   key: string;
   label: string;
   render: (s: PadronRow) => React.ReactNode;
+  /**
+   * Cuando está marcada, la columna no sale en la hoja impresa — sigue en
+   * pantalla y en los exports, que son los que permiten auditar por qué
+   * alguien quedó habilitado.
+   *
+   * Hoy sólo se marca para el padrón electoral, que se pega en los sectores
+   * del club: publicar DNI y edad de miles de socios en un pasillo es exponer
+   * datos personales que nadie necesita para encontrarse en la lista. El
+   * padrón general se imprime completo, DNI incluido.
+   */
+  printHidden?: boolean;
 };
 
 export default function PadronPage() {
@@ -185,13 +197,27 @@ export default function PadronPage() {
     return filtered.slice(start, start + PAGE_SIZE);
   }, [filtered, currentPage, printAll]);
 
+  // El nombre de la categoría filtrada, o null si están todas.
+  const categoriaSeleccionada = useMemo(
+    () =>
+      selectedCategoria === "all"
+        ? null
+        : (categorias.find((c) => c.id === selectedCategoria)?.nombre ?? "—"),
+    [categorias, selectedCategoria],
+  );
+
+  const hayFiltroActivo = selectedCategoria !== "all" || search.trim() !== "";
+
   const sinCuotas = useMemo(
     () => filtered.filter((s) => s.cuotas_sociales_emitidas === 0).length,
     [filtered],
   );
 
-  // Columnas: única fuente para el <TableHeader>, las celdas y colSpan/skeleton
-  // — un columnCount hardcodeado se hubiera desincronizado del header.
+  // Columnas: única fuente para el <TableHeader>, las celdas, colSpan/skeleton
+  // y los headers de export — un columnCount hardcodeado se hubiera
+  // desincronizado del header. Las que salen del padrón electoral se marcan
+  // con printHidden en vez de sacarlas del array: quitarlas achicaría también
+  // el Excel y el CSV, que son justamente los que hay que poder auditar.
   const columns = useMemo<Column[]>(() => {
     const base: Column[] = [
       {
@@ -201,26 +227,44 @@ export default function PadronPage() {
       },
       { key: "apellido", label: "Apellido", render: (s) => s.apellido },
       { key: "nombre", label: "Nombre", render: (s) => s.nombre },
-      { key: "dni", label: "DNI", render: (s) => s.dni },
-      { key: "categoria", label: "Categoría", render: (s) => s.categoria },
+      {
+        key: "dni",
+        label: "DNI",
+        render: (s) => s.dni,
+        printHidden: soloHabilitados,
+      },
+      {
+        key: "categoria",
+        label: "Categoría",
+        render: (s) => s.categoria,
+        printHidden: soloHabilitados,
+      },
       {
         key: "fecha_alta",
         label: "Fecha Alta",
         render: (s) => formatDateOnly(s.fecha_alta),
+        printHidden: soloHabilitados,
       },
       {
         key: "localidad",
         label: "Localidad",
         render: (s) => s.localidad ?? "—",
+        printHidden: soloHabilitados,
       },
     ];
     if (soloHabilitados) {
       base.push(
-        { key: "edad", label: "Edad", render: (s) => s.edad ?? "—" },
+        {
+          key: "edad",
+          label: "Edad",
+          render: (s) => s.edad ?? "—",
+          printHidden: soloHabilitados,
+        },
         {
           key: "antiguedad_anios",
           label: "Antigüedad",
           render: (s) => s.antiguedad_anios,
+          printHidden: soloHabilitados,
         },
       );
     }
@@ -366,7 +410,9 @@ export default function PadronPage() {
         />
       </div>
 
-      {/* Encabezado de impresión: lo que hace auditable la hoja emitida. */}
+      {/* Encabezado de impresión: lo que hace auditable la hoja emitida.
+          El padrón electoral se publica en los sectores del club, así que va
+          mínimo (título y fecha); el padrón general conserva el detalle. */}
       <div className="hidden print:block">
         <h1 className="text-lg font-bold">
           {soloHabilitados ? "Padrón Electoral" : "Padrón de Socios"}
@@ -374,26 +420,26 @@ export default function PadronPage() {
         <p className="text-sm">
           Fecha de emisión: {formatDateOnly(todayISO())}
         </p>
-        <p className="text-sm">
-          Total: {filtered.length}{" "}
-          {soloHabilitados ? "habilitados a votar" : "socios"}
-        </p>
-        <p className="text-sm">
-          Categoría:{" "}
-          {selectedCategoria === "all"
-            ? "Todas"
-            : (categorias.find((c) => c.id === selectedCategoria)?.nombre ??
-              "—")}
-          {search.trim() && ` · Búsqueda: "${search.trim()}"`}
-        </p>
-        {soloHabilitados && (
-          <p className="text-sm">
-            Criterios: categoría habilitada, 18 años cumplidos, 1 año de
-            antigüedad,
-            {periodoCorte
-              ? ` cuota social al día (corte: ${formatPeriodoCorte(periodoCorte)}).`
-              : ' sin criterio de deuda activo (no hay cuotas sociales "afecta padrón" emitidas a la fecha).'}
-          </p>
+        {soloHabilitados ? (
+          // Con un filtro puesto la hoja tiene que decir que es parcial: si no,
+          // buscar "Gonz" e imprimir publica 40 nombres bajo el título "Padrón
+          // Electoral" sin ninguna señal de que faltan los otros 8.300.
+          hayFiltroActivo && (
+            <p className="text-sm font-medium">
+              Listado parcial: {filtered.length}{" "}
+              {filtered.length === 1 ? "habilitado" : "habilitados"}
+              {categoriaSeleccionada && ` · Categoría: ${categoriaSeleccionada}`}
+              {search.trim() && ` · Búsqueda: "${search.trim()}"`}
+            </p>
+          )
+        ) : (
+          <>
+            <p className="text-sm">Total: {filtered.length} socios</p>
+            <p className="text-sm">
+              Categoría: {categoriaSeleccionada ?? "Todas"}
+              {search.trim() && ` · Búsqueda: "${search.trim()}"`}
+            </p>
+          </>
         )}
       </div>
 
@@ -402,7 +448,12 @@ export default function PadronPage() {
           <TableHeader>
             <TableRow>
               {columns.map((c) => (
-                <TableHead key={c.key}>{c.label}</TableHead>
+                <TableHead
+                  key={c.key}
+                  className={cn(c.printHidden && "print:hidden")}
+                >
+                  {c.label}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -411,7 +462,10 @@ export default function PadronPage() {
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
                   {columns.map((c) => (
-                    <TableCell key={c.key}>
+                    <TableCell
+                      key={c.key}
+                      className={cn(c.printHidden && "print:hidden")}
+                    >
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
                   ))}
@@ -451,7 +505,12 @@ export default function PadronPage() {
               paginated.map((s) => (
                 <TableRow key={s.id}>
                   {columns.map((c) => (
-                    <TableCell key={c.key}>{c.render(s)}</TableCell>
+                    <TableCell
+                      key={c.key}
+                      className={cn(c.printHidden && "print:hidden")}
+                    >
+                      {c.render(s)}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
@@ -509,8 +568,11 @@ export default function PadronPage() {
               Al día hasta {formatPeriodoCorte(periodoCorte)} inclusive.
             </p>
           ))}
+        {/* print:hidden como sus hermanas de arriba: es una métrica interna de
+            calidad de datos. En la hoja que se pega en el club quedaría como el
+            único número de la página y se lee como "137 socios deben cuotas". */}
         {soloHabilitados && !isLoading && !error && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground print:hidden">
             {sinCuotas} habilitados no tienen cuotas sociales emitidas
           </p>
         )}
