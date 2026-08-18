@@ -31,7 +31,6 @@ import { getPadron, getPeriodoCorte } from "./actions";
 import { getCategorias } from "../actions";
 import { formatDateOnly, todayISO, exportToCSV } from "@/lib/format";
 import { exportToExcel } from "@/lib/export";
-import { cn } from "@/lib/utils";
 import type { PadronRow, CategoriaSocial } from "@/types/socios";
 
 const PAGE_SIZE = 100;
@@ -54,6 +53,19 @@ type Column = {
    * del club: publicar DNI y edad de miles de socios en un pasillo es exponer
    * datos personales que nadie necesita para encontrarse en la lista. El
    * padrón general se imprime completo, DNI incluido.
+   *
+   * El ocultamiento lo hace el atributo `data-print-hide` en las celdas,
+   * contra la regla `[data-print-hide] { display: none !important }` del
+   * bloque @media print de esta misma página. Si estas columnas se mudan a un
+   * componente compartido que se renderice fuera de acá, la bandera queda en
+   * nada y el DNI vuelve al papel sin que nada falle. No usar `print:hidden`
+   * de Tailwind: pierde por especificidad contra las reglas de densidad, y
+   * escaparla en styled-jsx emite dos backslashes y un selector inválido.
+   *
+   * El ternario `printHidden ? "" : undefined` de las celdas es obligatorio:
+   * `data-print-hide={c.printHidden}` renderiza `data-print-hide="false"`, que
+   * el selector de presencia matchea igual — se ocultarían TODAS las columnas
+   * y saldría una hoja de filas en blanco.
    */
   printHidden?: boolean;
 };
@@ -277,11 +289,21 @@ export default function PadronPage() {
   // ningún síntoma en pantalla.
   const printGridTracks = useMemo(() => {
     const visibles = columns.filter((c) => !c.printHidden).length;
+    // (mismo conteo que renderColumns durante la impresión, por construcción)
     if (visibles <= 1) return "1fr";
     // La primera (Nro Socio) es angosta y de ancho fijo para que las filas
     // alineen entre sí dentro de cada columna de nombres.
-    return ["10mm", ...Array(visibles - 1).fill("1fr")].join(" ");
+    return ["12mm", ...Array(visibles - 1).fill("1fr")].join(" ");
   }, [columns]);
+
+  // Durante la impresión las columnas ocultas no se renderizan: que el DNI no
+  // llegue al papel deja de depender de que una regla CSS gane la cascada, que
+  // es exactamente por donde se filtró dos veces. La regla [data-print-hide]
+  // queda igual como respaldo para navegadores donde beforeprint no dispara.
+  const renderColumns = useMemo(
+    () => (printAll ? columns.filter((c) => !c.printHidden) : columns),
+    [columns, printAll],
+  );
 
   const exportHeaders = useMemo(
     () => columns.map((c) => ({ key: c.key, label: c.label })),
@@ -441,7 +463,11 @@ export default function PadronPage() {
               Listado parcial: {filtered.length}{" "}
               {filtered.length === 1 ? "habilitado" : "habilitados"}
               {categoriaSeleccionada && ` · Categoría: ${categoriaSeleccionada}`}
-              {search.trim() && ` · Búsqueda: "${search.trim()}"`}
+              {/* El texto buscado no se imprime: el buscador matchea por DNI
+                  (ver el placeholder), así que buscar un DNI e imprimir lo
+                  publicaba —y encima en text-sm, más grande que los nombres a
+                  8pt—. La advertencia de "parcial" no necesita el término. */}
+              {search.trim() && " · con búsqueda aplicada"}
             </p>
           )
         ) : (
@@ -462,10 +488,10 @@ export default function PadronPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map((c) => (
+              {renderColumns.map((c) => (
                 <TableHead
                   key={c.key}
-                  className={cn(c.printHidden && "print:hidden")}
+                  data-print-hide={c.printHidden ? "" : undefined}
                 >
                   {c.label}
                 </TableHead>
@@ -476,10 +502,10 @@ export default function PadronPage() {
             {isLoading ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
-                  {columns.map((c) => (
+                  {renderColumns.map((c) => (
                     <TableCell
                       key={c.key}
-                      className={cn(c.printHidden && "print:hidden")}
+                      data-print-hide={c.printHidden ? "" : undefined}
                     >
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -489,7 +515,7 @@ export default function PadronPage() {
             ) : error ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={renderColumns.length}
                   className="h-24 text-center"
                 >
                   <p className="text-destructive">
@@ -510,7 +536,7 @@ export default function PadronPage() {
             ) : paginated.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={renderColumns.length}
                   className="h-24 text-center"
                 >
                   Sin resultados.
@@ -519,10 +545,10 @@ export default function PadronPage() {
             ) : (
               paginated.map((s) => (
                 <TableRow key={s.id}>
-                  {columns.map((c) => (
+                  {renderColumns.map((c) => (
                     <TableCell
                       key={c.key}
-                      className={cn(c.printHidden && "print:hidden")}
+                      data-print-hide={c.printHidden ? "" : undefined}
                     >
                       {c.render(s)}
                     </TableCell>
@@ -617,14 +643,14 @@ export default function PadronPage() {
           }
           /* Densidad del padrón electoral. Medido sobre 8.400 socios: la tabla
              de pantalla (td p-4 = 16px arriba y abajo, th h-12) da ~16 nombres
-             por hoja y 495 páginas para pegar en la pared. Bajando padding y
-             cuerpo de letra son 156; en dos columnas de nombres, 73 — ~115
-             nombres por hoja. El grueso del desperdicio no era la fuente sino
+             por hoja y 495 páginas para pegar en la pared. Con padding
+             mínimo, 8pt y dos columnas de nombres: 65 páginas, ~129 nombres
+             por hoja. El grueso del desperdicio no era la fuente sino
              el padding y la mitad derecha vacía de la hoja: tres columnas de
              texto corto no llenan un A4 a lo ancho.
 
-             9pt es el piso legible de parado a un brazo de distancia; 8pt
-             entraba en ~62 páginas pero ya cuesta leerlo en una pared.
+             8pt: el pedido explícito del club fue achicarla más. Debajo de eso
+             ya cuesta leerlo de parado contra una pared.
 
              Se pierde la fila de encabezado repetida (el thead no se puede
              repetir arriba de cada columna), decisión tomada a cambio de las
@@ -633,7 +659,7 @@ export default function PadronPage() {
              columnas y su encabezado como siempre. */
           [data-padron-compacto] table {
             display: block;
-            font-size: 9pt;
+            font-size: 8pt;
             line-height: 1.2;
           }
           /* El wrapper de <Table> trae overflow-auto: un contenedor de scroll
@@ -665,16 +691,14 @@ export default function PadronPage() {
             display: block;
             padding: 1px 2px;
           }
-          /* Reafirmar el ocultamiento, que si no se pierde en la cascada: la
-             regla de arriba es (0,1,2) y la utilidad .print\\:hidden de Tailwind
-             es (0,1,0), así que el display:block le gana y las columnas
-             ocultas —DNI incluido— volvían a imprimirse. Verificado contando
-             las celdas dibujadas en el PDF: 3 en vez de 2. Es la clase de
-             regresión que no se ve en pantalla y termina en la pared. */
-          [data-padron-compacto] tbody td.print\\:hidden,
-          [data-padron-compacto] thead th.print\\:hidden {
-            display: none !important;
-          }
+          /* El ocultamiento de las columnas lo hace [data-print-hide] con la
+             regla !important de arriba, no una clase de Tailwind. Motivo: la
+             utilidad print:hidden es (0,1,0) y la regla de acá arriba (0,1,2),
+             así que el display:block le ganaba y el DNI volvía al papel — y
+             reafirmarla con .print\\:hidden no servía, porque styled-jsx no
+             colapsa el escape del template literal y emitía dos backslashes,
+             un selector inválido que el navegador descarta entero. El atributo
+             no necesita escaparse y su regla ya existe. */
         }
       `}</style>
     </div>
