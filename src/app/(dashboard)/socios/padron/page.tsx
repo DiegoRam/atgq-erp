@@ -271,6 +271,18 @@ export default function PadronPage() {
     return base;
   }, [soloHabilitados]);
 
+  // Las pistas del grid de impresión salen de `columns` y no de un "3"
+  // hardcodeado: agregar una columna al padrón electoral, o dar vuelta un
+  // printHidden, desalineaba la hoja impresa sin error de compilación y sin
+  // ningún síntoma en pantalla.
+  const printGridTracks = useMemo(() => {
+    const visibles = columns.filter((c) => !c.printHidden).length;
+    if (visibles <= 1) return "1fr";
+    // La primera (Nro Socio) es angosta y de ancho fijo para que las filas
+    // alineen entre sí dentro de cada columna de nombres.
+    return ["10mm", ...Array(visibles - 1).fill("1fr")].join(" ");
+  }, [columns]);
+
   const exportHeaders = useMemo(
     () => columns.map((c) => ({ key: c.key, label: c.label })),
     [columns],
@@ -443,7 +455,10 @@ export default function PadronPage() {
         )}
       </div>
 
-      <div className="rounded-md border print:border-none">
+      <div
+        className="rounded-md border print:border-none"
+        data-padron-compacto={soloHabilitados ? "" : undefined}
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -580,6 +595,12 @@ export default function PadronPage() {
 
       <style jsx global>{`
         @media print {
+          /* Aplica a todo el trabajo de impresión, no sólo al padrón
+             electoral: @page no se puede scopear a un selector. Es la única
+             regla de acá que también toca la hoja del padrón general. */
+          @page {
+            margin: 12mm;
+          }
           header,
           nav,
           [data-print-hide] {
@@ -593,6 +614,66 @@ export default function PadronPage() {
           }
           tr {
             break-inside: avoid;
+          }
+          /* Densidad del padrón electoral. Medido sobre 8.400 socios: la tabla
+             de pantalla (td p-4 = 16px arriba y abajo, th h-12) da ~16 nombres
+             por hoja y 495 páginas para pegar en la pared. Bajando padding y
+             cuerpo de letra son 156; en dos columnas de nombres, 73 — ~115
+             nombres por hoja. El grueso del desperdicio no era la fuente sino
+             el padding y la mitad derecha vacía de la hoja: tres columnas de
+             texto corto no llenan un A4 a lo ancho.
+
+             9pt es el piso legible de parado a un brazo de distancia; 8pt
+             entraba en ~62 páginas pero ya cuesta leerlo en una pared.
+
+             Se pierde la fila de encabezado repetida (el thead no se puede
+             repetir arriba de cada columna), decisión tomada a cambio de las
+             hojas. Salvo el margen de @page, todo esto va scopeado a
+             [data-padron-compacto]: el padrón general se imprime con sus
+             columnas y su encabezado como siempre. */
+          [data-padron-compacto] table {
+            display: block;
+            font-size: 9pt;
+            line-height: 1.2;
+          }
+          /* El wrapper de <Table> trae overflow-auto: un contenedor de scroll
+             puede cortar el contenido en la primera página al paginar. */
+          [data-padron-compacto] .overflow-auto {
+            overflow: visible;
+          }
+          [data-padron-compacto] thead {
+            display: none;
+          }
+          [data-padron-compacto] tbody {
+            display: block;
+            column-count: 2;
+            column-gap: 6mm;
+            column-fill: auto;
+          }
+          [data-padron-compacto] tbody tr {
+            display: grid;
+            grid-template-columns: ${printGridTracks};
+            column-gap: 2mm;
+          }
+          /* Las filas de "Sin resultados." y de error son un solo td con
+             colSpan, que display:grid ignora: sin esto el mensaje entra
+             aplastado en la primera pista de 10mm. */
+          [data-padron-compacto] tbody td[colspan] {
+            grid-column: 1 / -1;
+          }
+          [data-padron-compacto] tbody td {
+            display: block;
+            padding: 1px 2px;
+          }
+          /* Reafirmar el ocultamiento, que si no se pierde en la cascada: la
+             regla de arriba es (0,1,2) y la utilidad .print\\:hidden de Tailwind
+             es (0,1,0), así que el display:block le gana y las columnas
+             ocultas —DNI incluido— volvían a imprimirse. Verificado contando
+             las celdas dibujadas en el PDF: 3 en vez de 2. Es la clase de
+             regresión que no se ve en pantalla y termina en la pared. */
+          [data-padron-compacto] tbody td.print\\:hidden,
+          [data-padron-compacto] thead th.print\\:hidden {
+            display: none !important;
           }
         }
       `}</style>
