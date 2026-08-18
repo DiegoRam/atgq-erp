@@ -33,6 +33,80 @@ supabase db push       # apply migrations to linked project (run from repo root)
 
 Never run `supabase db reset` — apply migrations to preserve auth users.
 
+## Development Workflow — Tier System
+
+Clasificar **toda** tarea en un tier **antes de empezar**. En la duda, subir de tier (1→2, 2→3). El tier decide qué agentes se lanzan y qué pasos de "Verifying a change" son obligatorios.
+
+| Tier | Nombre | Cuándo | Ejemplos |
+|------|--------|--------|----------|
+| 1 | Arreglo Rápido | 1 archivo, sin lógica de negocio | Typos, copy, tweaks de Tailwind, imports, docs |
+| 2 | Cambio Moderado | Multi-archivo **o** lógica de negocio | Bug fixes, validaciones, server actions, RLS policies, refactors |
+| 3 | Característica Compleja | Feature nueva, módulo, migración DB, integración | Nueva ruta `(dashboard)/<módulo>/`, tabla nueva, RPC nuevo, cambio arquitectural |
+
+```
+¿Es un cambio en 1 solo archivo SIN lógica de negocio?
+  ├─ SÍ → Tier 1
+  └─ NO → ¿Es feature nueva, módulo, migración DB, o integración?
+            ├─ SÍ → Tier 3
+            └─ NO → Tier 2
+```
+
+### Tier 1 — Arreglo Rápido
+
+1. Fix directo.
+2. Paso 1 de "Verifying a change" (`npm run lint` + `npx tsc --noEmit`).
+3. Listo. No requiere agentes, ni browser, ni CHANGELOG/PROGRESS.
+
+### Tier 2 — Cambio Moderado
+
+1. **Contexto primero** — si hay que ubicar dónde vive algo (patrones, usos de un helper, dónde se repite una convención), lanzar `Explore` en vez de leer archivo por archivo.
+2. **Implementar** delegando al especialista que corresponda (ver tabla abajo). Un cambio de UI en pantallas `(dashboard)` va a `react-nextjs-expert` o `tailwind-frontend-expert`; uno de server actions / SQL va a `backend-enginner`. Si el cambio es chico y ya está claro, implementarlo directo — la tabla es para elegir bien, no para delegar por trámite.
+3. **Gate de review (paso 3 de "Verifying a change")**: la skill `code-review` sobre el diff **más** un `code-reviewer` en paralelo, en el mismo mensaje:
+   ```
+   Skill tool  → skill: "code-review"
+   Agent tool  → subagent_type: "code-reviewer"
+                 prompt: "Review [archivos, incluidos los untracked]. Focus on: authz en server actions,
+                          RLS, validación Zod server-side, atomicidad de writes múltiples, manejo de errores"
+   ```
+   Son dos lentes distintas sobre el mismo diff; los hallazgos de ambas se verifican antes de aplicarse.
+4. **Pasos 2, 4 y 5** de "Verifying a change" — SQL contra la base real (si tocó migraciones o RPCs), `agent-browser` (si tocó UI), y `npm run build` **al final**.
+5. Actualizar `CHANGELOG.md`.
+
+### Tier 3 — Característica Compleja
+
+1. **`tech-lead-orchestrator` (obligatorio)** antes de escribir código: que analice el requerimiento y proponga el desglose y qué especialistas lo toman.
+   ```
+   Agent tool → subagent_type: "tech-lead-orchestrator"
+   ```
+2. **`api-architect`** si la feature define un contrato nuevo (RPC de Postgres, forma de datos entre server action y página, schema Zod compartido).
+3. **Implementar** delegando a los especialistas del paso 1.
+4. **Gate de review** — igual que Tier 2 paso 3, y además un revisor con foco propio del cambio.
+5. **Los 5 pasos completos** de "Verifying a change", en orden.
+6. Actualizar `CHANGELOG.md` **y** `PROGRESS.md`.
+
+### Specialized Agents
+
+| Agente | Tier mín. | Cuándo usarlo |
+|--------|-----------|----------------|
+| `tech-lead-orchestrator` | 3 | Features nuevas, módulos, cambios arquitecturales — desglose y asignación |
+| `Plan` | 3 | Plan de implementación paso a paso cuando el desglose ya está claro y falta la estrategia |
+| `Explore` | cualquiera | Búsqueda de contexto a lo ancho del codebase (dónde se usa X, qué convención sigue Y) |
+| `code-reviewer` | 2 | En paralelo a la skill `code-review`, con foco security/TypeScript |
+| `react-nextjs-expert` | 2 | App Router, server actions, RSC vs `"use client"`, caching, `next build` |
+| `frontend-developer` | 2 | UI compleja que no es específica de Next.js (estado, accesibilidad, formularios) |
+| `tailwind-frontend-expert` | 2 | Layout/responsive/estilos sobre Tailwind + shadcn |
+| `backend-enginner` | 2 | Server actions, queries Supabase, SQL, migraciones, RLS |
+| `api-architect` | 3 | Contratos nuevos: RPCs, shapes de datos, schemas Zod compartidos |
+| `performance-optimizer` | 2 | Pantallas lentas, queries pesadas, listados de miles de filas |
+| `agent-browser` (skill) | 2 (si toca UI) | Paso 4 de verificación — recorrer las pantallas reales |
+
+**Reglas de delegación**
+- Preferir el especialista específico al genérico: `react-nextjs-expert` antes que `frontend-developer`; `backend-enginner` antes que `general-purpose`.
+- Máximo **2 agentes en paralelo** para tareas de implementación (coordinación); los de review sí van juntos.
+- Los agentes de implementación **no reemplazan la verificación**: sus cambios pasan igual por los 5 pasos de abajo.
+- Todo agente que se lanza necesita el contexto de este archivo en el prompt (convenciones, clientes de Supabase, RBAC) — no lo heredan solos.
+- **Nunca omitir un gate en silencio.** Si un paso no aplica (p. ej. el cambio no toca UI, o no hay SQL), decirlo explícito en el resumen final: "Skip agent-browser: el cambio no toca componentes".
+
 ## Verifying a change
 
 A task is not done when it compiles. Run these in order, and report what actually happened (including failures):
@@ -44,6 +118,7 @@ A task is not done when it compiles. Run these in order, and report what actuall
    - **Los archivos nuevos sin trackear no aparecen en `git diff`.** Hay que nombrárselos explícitamente a los revisores para que los lean, o quedan sin revisar — que suele ser justo donde está el código nuevo.
    - **Los hallazgos se verifican antes de aplicarlos.** Los revisores se equivocan y también aciertan por las razones equivocadas; rehacer la cuenta o leer el código antes de cambiar nada. Los que sobreviven se arreglan *antes* de dar la tarea por terminada, y se vuelve a correr lint + tsc después (el build recién en el paso 5).
    - Conviene lanzar revisores con foco distinto (adherencia a este CLAUDE.md, bugs del diff, y una dimensión propia del cambio) en vez de uno genérico.
+   - **La skill no va sola**: en el mismo mensaje se lanza también el subagente `code-reviewer` (foco security/TypeScript), como está detallado en "Tier 2 → paso 3".
 4. **`agent-browser`** — verify the UI end to end for any Tier 2+ change (multi-file, business logic, or a new feature): walk the real screens, exercise the new flows, and confirm the data actually changed. Save screenshots to `tests/screenshots/`. Type-correct code that renders a broken screen is still a broken change; the browser pass is what catches it.
 5. **`npm run build`** must pass clean — y va **último, después del browser**, no primero. `next build` y `next dev` comparten el directorio `.next/`: correr el build con un dev server levantado le pisa los manifests y lo deja sirviendo `500` con `ENOENT: .next/prerender-manifest.json`, con lo cual el paso 4 ya no se puede hacer. Dos secuelas que confunden:
    - El 500 **parece un bug del cambio y no lo es**: los assets estáticos siguen dando 200 y el middleware sigue redirigiendo (307). No hay que diagnosticar el código — hay que pedirle al desarrollador que reinicie su dev server.
