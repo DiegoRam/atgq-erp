@@ -98,9 +98,72 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
   });
 
-  const totalPages = Math.ceil(totalCount / pageSize);
+  // Math.max(1, …): con totalCount = 0 el techo da 0 y el pie decía "Pág. 1/0".
+  // Antes quedaba abajo de todo y casi no se veía; ahora se muestra también
+  // arriba, y en las 6 pantallas con paginación server-side el primer render
+  // tiene totalCount = 0 mientras carga, así que "0–0 de 0 · Pág. 1/0" sería lo
+  // primero que se lee. `disabled={page >= totalPages}` no cambia: pasa de
+  // `1 >= 0` a `1 >= 1`, true en los dos casos.
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const from = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, totalCount);
+
+  // Resumen + controles: se muestran arriba y abajo de la tabla. Arriba para
+  // que el total y la página actual se vean sin tener que scrollear hasta el
+  // final del listado; abajo se mantiene para poder pasar de página después
+  // de recorrer las filas sin volver arriba.
+  //
+  // La desambiguación entre los dos pares de botones va en el <nav> y no en un
+  // aria-label por botón: un lector de pantalla anunciando "Página anterior
+  // arriba, botón" no dice nada útil, mientras que el landmark ya da el
+  // contexto. Nombres accesibles repetidos NO son un problema cuando el
+  // contenedor los distingue.
+  function renderPaginationBar(position: "arriba" | "abajo") {
+    return (
+      <nav
+        aria-label={
+          position === "arriba"
+            ? "Paginación, arriba de la tabla"
+            : "Paginación, abajo de la tabla"
+        }
+        className="flex flex-col items-center gap-2 text-sm text-muted-foreground sm:flex-row sm:justify-between"
+      >
+        <span>
+          {from}–{to} de {totalCount}
+        </span>
+        {/* Sin nada que paginar los controles son ruido: 14 de las ~20
+            pantallas que usan DataTable pasan pageSize = cantidad de filas, así
+            que nunca tienen más de una página y mostraban un par de botones
+            permanentemente deshabilitados. El total sí se muestra siempre.
+            Mismo criterio que /socios/padron, que ya gateaba en totalPages > 1. */}
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+              aria-label="Página anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-xs sm:text-sm">
+              Pág. {page}/{totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+              aria-label="Página siguiente"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </nav>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -165,6 +228,12 @@ export function DataTable<TData, TValue>({
           )}
         </div>
       </div>
+
+      {/* Resumen + paginación arriba de la tabla: con listados largos había
+          que scrollear hasta el final para saber cuántos resultados hay y en
+          qué página se está. El bloque de abajo se mantiene para poder pasar
+          de página sin volver arriba después de recorrer la página actual. */}
+      {renderPaginationBar("arriba")}
 
       {/* Table */}
       <div className="overflow-x-auto rounded-md border">
@@ -240,32 +309,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground sm:flex-row sm:justify-between">
-        <span>
-          {from}–{to} de {totalCount}
-        </span>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(page - 1)}
-            disabled={page <= 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-xs sm:text-sm">
-            Pág. {page}/{totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(page + 1)}
-            disabled={page >= totalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      {renderPaginationBar("abajo")}
     </div>
   );
 }
