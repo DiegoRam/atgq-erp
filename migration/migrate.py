@@ -107,6 +107,25 @@ def ids(pg, table):
         return {x[0] for x in cur.fetchall()}
 
 
+def toggle_trigger(pg, table, trigger, enable):
+    """Prende/apaga un trigger de usuario si existe. Devuelve True si lo tocó.
+
+    El ALTER TABLE es transaccional en Postgres y migrate.py corre todo dentro
+    de una sola transacción (ver main()), así que un fallo posterior revierte
+    el estado del trigger junto con los datos: no puede quedar apagado.
+    """
+    with pg.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
+            "WHERE c.relname = %s AND t.tgname = %s AND NOT t.tgisinternal",
+            (table, trigger))
+        if not cur.fetchone():
+            return False
+        cur.execute("ALTER TABLE {} {} TRIGGER {}".format(
+            table, "ENABLE" if enable else "DISABLE", trigger))
+        return True
+
+
 # ==========================================================================
 # SOCIOS
 # ==========================================================================
@@ -399,12 +418,31 @@ def default_punto_venta(pg):
 
     VentasCabecera no tiene columna de sector, así que un default es la
     única opción. Si el legacy no trajo ningún punto de venta, se crea uno.
+
+    Se elige Secretaria (idDeposito=3 en el legacy) EXPLÍCITAMENTE, no por
+    `ORDER BY nombre LIMIT 1`. Ese orden alfabético devuelve "Arma Corta", y
+    la migración de julio dejó las ventas históricas en Secretaria
+    (20260803000001_puntos_venta_schema.sql:76-82 las backfilleó ahí). Con el
+    orden alfabético, una re-migración movería las ~15.000 ventas históricas
+    de Secretaria a Arma Corta en silencio, y todo reporte de ventas por punto
+    de venta cambiaría de un día para el otro sin explicación. Verificado
+    contra producción: hoy 14.775 en Secretaria, 1 en Arma Corta.
     """
+    SECRETARIA = nid("depositos", 3)
     with pg.cursor() as cur:
-        cur.execute("SELECT id FROM depositos WHERE tipo='punto_venta' "
+        cur.execute("SELECT id FROM depositos WHERE id=%s AND tipo='punto_venta'",
+                    (SECRETARIA,))
+        row = cur.fetchone()
+        if row:
+            return row[0]
+        # Sin Secretaria (dump distinto): se cae al orden alfabético, pero
+        # avisando, porque cambia dónde quedan todas las ventas históricas.
+        cur.execute("SELECT id, nombre FROM depositos WHERE tipo='punto_venta' "
                     "ORDER BY nombre LIMIT 1")
         row = cur.fetchone()
         if row:
+            print(f"    ! Secretaria (depositos:3) no está: las ventas legacy "
+                  f"caen en '{row[1]}'")
             return row[0]
         pdv = nid("depositos", "__default_punto_venta__")
         cur.execute(
@@ -487,10 +525,27 @@ def mig_ventas(my, pg):
         fecha = clean_date(r["f"]) or "1900-01-01"
         rows.append((nid("ventas", r["id"]), cl, so, fecha, r["Total"] or 0,
                      None, u, False, pdv))
-    n = copy(pg, "INSERT INTO ventas (id,cliente_id,socio_id,fecha,total,"
-             "metodo_pago_id,usuario_id,anulada,punto_venta_id) VALUES %s "
-             "ON CONFLICT (id) DO NOTHING", rows)
-    print(f"    ventas={n}")
+    # `ventas_comprador_guard` (supabase/migrations/20260805000001_ventas_no_socio.sql:62-80)
+    # rechaza toda venta que no identifique socio, cliente ni no_socio_nombre.
+    # El legacy tiene 93 de 15.221 ventas así. El comentario del propio trigger
+    # dice que "el import legacy y los seeds viejos dejaron ventas sin socio ni
+    # cliente" y las tolera vía la rama TG_OP='UPDATE' — pero eso cubre las
+    # filas YA EXISTENTES, no su REINSERCIÓN, que es exactamente lo que hace
+    # una re-migración. Sin esto, migrate.py aborta a mitad de mig_ventas con
+    # la base ya truncada.
+    #
+    # Se apaga sólo para esta carga y se vuelve a prender abajo. Si algo falla
+    # en el medio, el rollback de main() lo repone (el ALTER es transaccional).
+    tocado = toggle_trigger(pg, "ventas", "trg_ventas_comprador_guard", False)
+    try:
+        n = copy(pg, "INSERT INTO ventas (id,cliente_id,socio_id,fecha,total,"
+                 "metodo_pago_id,usuario_id,anulada,punto_venta_id) VALUES %s "
+                 "ON CONFLICT (id) DO NOTHING", rows)
+    finally:
+        if tocado:
+            toggle_trigger(pg, "ventas", "trg_ventas_comprador_guard", True)
+    sin_comprador = sum(1 for r in rows if r[1] is None and r[2] is None)
+    print(f"    ventas={n} sin_comprador(guard omitido)={sin_comprador}")
     return n
 
 
