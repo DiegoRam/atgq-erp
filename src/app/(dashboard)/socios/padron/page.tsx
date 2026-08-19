@@ -347,6 +347,60 @@ export default function PadronPage() {
     );
   }
 
+  // Resumen (total + rango) y controles de paginación: se muestran arriba y
+  // abajo de la tabla. Arriba para que se vean sin scrollear hasta el final
+  // del listado (100 filas por página); abajo se mantiene para poder pasar de
+  // página sin volver arriba después de recorrerlas. `position` distingue el
+  // nombre accesible de cada par de botones (mismo texto visual "Anterior" /
+  // "Siguiente"). La desambiguación va en el <nav> y NO en un aria-label por
+  // botón: acá los botones ya tienen texto visible, y un aria-label lo
+  // REEMPLAZA como nombre accesible. Un usuario de control por voz que dice
+  // "Click Anterior" dejaría de matchear el texto que está viendo (WCAG 2.5.3,
+  // "label in name"). El landmark alcanza para distinguir los dos pares.
+  function renderResumenPaginacion(position: "arriba" | "abajo") {
+    return (
+      <nav
+        aria-label={
+          position === "arriba"
+            ? "Paginación, arriba del padrón"
+            : "Paginación, abajo del padrón"
+        }
+        className="flex items-center justify-between print:hidden"
+      >
+        <p className="text-sm text-muted-foreground">
+          Total: {filtered.length}{" "}
+          {soloHabilitados ? "habilitados a votar" : "socios"}
+          {search.trim() && ` (de ${socios.length})`}
+          {totalPages > 1 &&
+            ` · ${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(currentPage * PAGE_SIZE, filtered.length)}`}
+        </p>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setPage(currentPage - 1)}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm">
+              Página {currentPage} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage(currentPage + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
+        )}
+      </nav>
+    );
+  }
+
   function handlePrint() {
     setPrinting(true);
     // setTimeout y no flushSync directo acá: hace falta ceder un frame para
@@ -442,6 +496,46 @@ export default function PadronPage() {
           onChange={(e) => handleSearchChange(e.target.value)}
           className="pl-8"
         />
+      </div>
+
+      {/* Resumen + paginación arriba de la tabla: con 100 filas por página,
+          antes había que scrollear hasta el final del listado para saber
+          cuántos resultados hay y en qué página se está. print:hidden alcanza
+          acá (no compite con las reglas de densidad del padrón electoral,
+          que sólo scopean [data-padron-compacto]) — data-print-hide es sólo
+          para las columnas dentro de esa tabla compacta. */}
+      <div className="flex flex-col gap-1 print:hidden">
+        {renderResumenPaginacion("arriba")}
+        {soloHabilitados &&
+          !isLoading &&
+          !error &&
+          (periodoCorte === null ? (
+            <p
+              className="text-sm font-medium text-amber-600 print:hidden"
+              role="alert"
+            >
+              Sin criterio de deuda activo: no hay cuotas sociales
+              (&quot;afecta padrón&quot;) emitidas a la fecha.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground print:hidden">
+              Al día hasta {formatPeriodoCorte(periodoCorte)} inclusive.
+            </p>
+          ))}
+        {/* print:hidden PROPIO, además del que tiene el contenedor de arriba, y
+            no es redundancia por las dudas: es una métrica interna de calidad
+            de datos. En la hoja que se pega en el club quedaría como el único
+            número de la página y se lee como "N socios deben cuotas", que no es
+            lo que dice. Si algún día alguien saca el print:hidden del
+            contenedor para mostrar el total en la hoja impresa —que es un
+            pedido razonable—, estas dos notas tienen que seguir ocultas por su
+            cuenta. Sin esto, ese cambio de una línea las publica sin que nadie
+            lo note. */}
+        {soloHabilitados && !isLoading && !error && (
+          <p className="text-xs text-muted-foreground print:hidden">
+            {sinCuotas} habilitados no tienen cuotas sociales emitidas
+          </p>
+        )}
       </div>
 
       {/* Encabezado de impresión: lo que hace auditable la hoja emitida.
@@ -560,63 +654,12 @@ export default function PadronPage() {
         </Table>
       </div>
 
+      {/* Las notas de "al día hasta..." y "sin cuotas emitidas" no se
+          duplican acá abajo: ya están arriba, junto al total, que es donde
+          hace falta verlas sin scrollear. Acá se repiten sólo el total y los
+          controles, para poder pasar de página sin volver arriba. */}
       <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between print:hidden">
-          <p className="text-sm text-muted-foreground">
-            Total: {filtered.length}{" "}
-            {soloHabilitados ? "habilitados a votar" : "socios"}
-            {search.trim() && ` (de ${socios.length})`}
-            {totalPages > 1 &&
-              ` · ${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(currentPage * PAGE_SIZE, filtered.length)}`}
-          </p>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage <= 1}
-                onClick={() => setPage(currentPage - 1)}
-              >
-                Anterior
-              </Button>
-              <span className="text-sm">
-                Página {currentPage} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage >= totalPages}
-                onClick={() => setPage(currentPage + 1)}
-              >
-                Siguiente
-              </Button>
-            </div>
-          )}
-        </div>
-        {soloHabilitados &&
-          !isLoading &&
-          !error &&
-          (periodoCorte === null ? (
-            <p
-              className="text-sm font-medium text-amber-600 print:hidden"
-              role="alert"
-            >
-              Sin criterio de deuda activo: no hay cuotas sociales
-              (&quot;afecta padrón&quot;) emitidas a la fecha.
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground print:hidden">
-              Al día hasta {formatPeriodoCorte(periodoCorte)} inclusive.
-            </p>
-          ))}
-        {/* print:hidden como sus hermanas de arriba: es una métrica interna de
-            calidad de datos. En la hoja que se pega en el club quedaría como el
-            único número de la página y se lee como "137 socios deben cuotas". */}
-        {soloHabilitados && !isLoading && !error && (
-          <p className="text-xs text-muted-foreground print:hidden">
-            {sinCuotas} habilitados no tienen cuotas sociales emitidas
-          </p>
-        )}
+        {renderResumenPaginacion("abajo")}
       </div>
 
       <style jsx global>{`
