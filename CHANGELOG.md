@@ -8,6 +8,32 @@ Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Changed
+
+**Re-migración del sistema legacy (dump 2026-08-17) sobre producción, y pipeline preparado para repetirla.** El club sigue operando en el sistema viejo, así que la base del ERP se re-siembra desde el backup cada vez que hace falta probar con datos actuales. La corrida de julio era `limpiar → migrar → validar`; alcanzaba porque la base sólo tenía seed demo. Ahora son **6 pasos**, porque desde entonces aparecieron dos clases de estado que el `TRUNCATE` destruye y el legacy no puede reponer.
+
+Resultado en producción: **243.788 filas**, socios 8.552→8.566, cuotas 138.033→139.372, ventas 14.775→15.221, movimientos de fondos 51.212→52.544. Gate de validación 11/11, 0 FKs huérfanas.
+
+- **`migration/preflight.sql`** (nuevo) — reporte read-only que dice qué se pierde antes de tocar nada; es un gate de aprobación humana, no informativo. Corre dentro de `SET TRANSACTION READ ONLY` + `ROLLBACK`, así que la garantía la da el motor y no la disciplina del autor. Distingue el origen de cada fila por la versión del UUID: `migrate.py` genera uuid5 (v5) y la app usa `gen_random_uuid()` (v4).
+
+- **`migration/reseed_post_migracion.sql`** (nuevo) — repone lo que las migraciones posteriores a julio sembraban sobre tablas truncables y que el truncate borraba **en silencio**: las categorías `Ventas`/`Anulación de Ventas` que exige `registrar_venta` (sin ellas el POS deja de vender), `depositos.caja_id` (sin él las ventas dejan de impactar tesorería sin ningún error), `habilita_voto` (padrón vacío) y `afecta_padron` (el padrón habilitaba morosos). Siembra **por uuid5 determinista y no por nombre**, con guards de conteo exacto que nombran lo que falta.
+
+- **`migration/clean_demo_seed.sql`** — de `TRUNCATE` pelado a: `LOCK TABLE` de las 24 tablas como primera sentencia, guardia de clausura transitiva de FKs, snapshot a `respaldo_premigracion`, truncate, y verificación en los dos sentidos. El `LOCK` cierra una ventana de pérdida silenciosa: en READ COMMITTED cada sentencia toma su propio snapshot, así que estar dentro de una transacción no congela nada y toda fila commiteada durante los ~40s del respaldo se destruía sin quedar respaldada ni reportada.
+
+- **`migration/restore_datos_erp.sql`** (nuevo) — repone los catálogos nacidos en el ERP derivando FKs y UNIQUEs de `pg_constraint`/`pg_index` en vez de una lista escrita a mano. **Descarta las tablas transaccionales**: mientras el club opere en el legacy, toda venta o movimiento cargado en el ERP es una prueba, y reponerlas acumularía basura de testing corrida tras corrida. Descartar no es destruir — quedan en el respaldo.
+
+- **`migration/migrate.py`** — apaga `trg_ventas_comprador_guard` durante la carga de ventas: el legacy tiene 93 ventas sin socio ni cliente y el trigger, que tolera las filas ya existentes, rechaza su **reinserción**. Sin esto la migración abortaba a mitad con producción ya truncada. Y `default_punto_venta` ahora elige Secretaria por id en vez de `ORDER BY nombre LIMIT 1`, que devolvía "Arma Corta" y habría movido las 15.221 ventas históricas de punto de venta en silencio.
+
+- **`migration/run_real.sh`** — orquesta los 6 pasos. El orden **restore antes que reseed no es intercambiable**: al revés, el reseed ocupa el `UNIQUE (nombre,tipo)` de las categorías del POS con ids nuevos, el restore no puede reponer las originales, y los movimientos de fondos que las referenciaban quedan huérfanos. Verifica el origen, la integridad del respaldo, exige tipear `SI, TRUNCAR PRODUCCION`, y sale con código ≠ 0 si algo no se repuso. La antigüedad del respaldo se **avisa** junto al prompt, no se veta: cuánto riesgo aceptar es decisión del dueño del sistema.
+
+- **`scripts/check-reseed-marker.sh`** (nuevo) — exige el marcador `-- RESEED-STATUS:` en toda migración que siembre sobre una tabla truncable. Existe porque este defecto rompió cuatro veces en tres semanas y tres de las cuatro fueron silenciosas. Lee la lista de tablas del propio `clean_demo_seed.sql` para que no se desincronicen, e ignora los cuerpos de función (un `INSERT INTO ventas` dentro de `registrar_venta` corre al vender, no al migrar).
+
+- **`migration/_dsn_to_env.py`** (nuevo) — parte el DSN en variables `PG*` para que la password de producción no viaje en `argv`, donde cualquier usuario la lee con `ps`. Vive en un archivo propio y no en un heredoc porque **bash 3.2 (el de macOS) no parsea un heredoc dentro de `$( )` dentro de comillas** cuando el cuerpo tiene paréntesis, y falla con un error que apunta a una línea sana.
+
+### Fixed
+
+- **Padrón electoral: 15 socios estaban excluidos sin motivo** (`supabase/migrations/20260818000001_padron_fix_seed_habilita_voto.sql`). El seed de `20260817000001` marcaba `habilita_voto` matcheando por nombre contra una lista escrita a mano, y dos de las ocho categorías no matcheaban: `Grupo Fliar. Miembro  - Ventanilla` tiene doble espacio y guion espaciado, y `Grupo Familiar` había sido renombrada en el legacy (el seed buscaba `GRUPO FAMILIA`, que era el nombre correcto cuando se escribió). El guard no lo detectó porque verificaba `count(*) = 0` — o sea que matcheó *algo*, no que matcharon *los ocho*. Ahora identifica por id determinista **o** nombre normalizado (colapsa espacios repetidos, NBSP y espacios alrededor del guion), con la expresión escrita una sola vez para que el `UPDATE` y el guard no puedan divergir, que es cómo nació el bug. El guard de `tipos_cuotas.afecta_padron` tenía el mismo defecto de forma y se endureció igual. Padrón: 760 → 791 habilitados.
+
 ### Security
 
 Remediación del export de advisories de Sentinello del 2026-08-04 (41 hallazgos: 20 high, 19 moderate, 2 low). Estado final: **40 cerrados, 1 residual documentado**, más 1 hallazgo nuevo detectado y cerrado durante el trabajo. `npm audit` → `found 0 vulnerabilities`.

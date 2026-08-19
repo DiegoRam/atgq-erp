@@ -58,3 +58,7 @@ pnpm-workspace.yaml
 
 # Snapshots y logs del MCP de Playwright (artefactos de verificación, no fuente)
 .playwright-mcp/
+
+# Conexión a la DB de producción para el pipeline de migración (contiene
+# la password de Supabase) — nunca commitear
+.env.migration
